@@ -1,0 +1,249 @@
+package com.syncstate.go.cardinal.inside.ShiftKrew.services;
+
+
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.UserStatus;
+import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.InstanceExistsException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.*;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserDTO;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserTechnicalTrainingRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.CreateNewUserAccountRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserSkillSetRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserWorkExperienceRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
+import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class UserService {
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    UserReferralRepository userReferralRepository;
+
+    @Autowired
+    UserSkillSetRepository userSkillSetRepository;
+
+    @Autowired
+    UserWorkExperienceRepository userWorkExperienceRepository;
+
+    @Autowired
+    UserWorkExperienceSkillSetRepository userWorkExperienceSkillSetRepository;
+
+    @Autowired
+    UserTechnicalTrainingRepository userTechnicalTrainingRepository;
+
+
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public AutoGraphResponse getAllUsers(){
+        Collection<UserDTO> allUsers = userRepository.getAllUsers();
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Users listed");
+        Map<String, Collection> responseData = new HashMap<>();
+        responseData.put("userList", allUsers);
+        autoGraphResponse.setResponseData(responseData);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse getUserById(Long userId) {
+        UserDTO user = userRepository.getUserById(userId);
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("User details");
+        autoGraphResponse.setResponseData(user);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse createNewUserAccount(CreateNewUserAccountRequest createNewUserAccountRequest) {
+
+
+        Optional<User> userOptional = this.userRepository.getPrimaryUserByUsername(createNewUserAccountRequest.getEmailAddress());
+        if(!userOptional.isEmpty())
+        {
+            throw new InstanceExistsException("This email address has already been used.");
+        }
+
+        User user = new User();
+        user.setUserStatus(UserStatus.SIGNED_UP);
+        user.setPassword(passwordEncoder.encode(createNewUserAccountRequest.getPassword()));
+        user.setFirstName(createNewUserAccountRequest.getFirstName());
+        user.setLastName(createNewUserAccountRequest.getLastName());
+        user.setUsername(createNewUserAccountRequest.getEmailAddress());
+        user = (User) userRepository.save(user);
+
+        if(createNewUserAccountRequest.getReferralCode()!=null)
+        {
+            UserReferral userReferral = new UserReferral();
+            userReferral.setUserId(user.getUserId());
+            userReferral.setReferralCode(createNewUserAccountRequest.getReferralCode());
+            userReferral.setIsValid(true);
+            userReferral = (UserReferral) userReferralRepository.save(userReferral);
+        }
+
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(user, userDTO);
+
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Your Autograph account has been setup successfully for you.");
+        autoGraphResponse.setResponseData(userDTO);
+
+        return autoGraphResponse;
+    }
+
+    public User getUserByUsernameForLogin(String username) throws Exception {
+        Optional<User> userOptional =  this.userRepository.getAnyserByUsername(username);
+        return userOptional.stream().findFirst().orElseThrow(
+                () -> new Exception("Login failed. Provide valid username to login")
+        );
+    }
+
+    public AutoGraphResponse addUserSkillset(User user, AddUserSkillSetRequest updateUserSkillSetRequest) throws AppException {
+
+        List<UserSkillSet> skillSetsCreated = updateUserSkillSetRequest.getSkillSetList().stream().map(skill -> {
+            UserSkillSet userSkillSet = new UserSkillSet();
+            userSkillSet.setUserId(user.getUserId());
+            userSkillSet.setIsValid(true);
+            userSkillSet.setSkillSetId(skill.getSkillSetId());
+            userSkillSet.setSkillSetExpertiseLevel(skill.getExpertiseLevel());
+            userSkillSet = (UserSkillSet) userSkillSetRepository.save(userSkillSet);
+            return userSkillSet;
+        }).collect(Collectors.toList());
+
+
+        if(skillSetsCreated!=null && skillSetsCreated.size()>0)
+        {
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your profile has been updated to reflect your skillset.");
+            autoGraphResponse.setResponseData(skillSetsCreated);
+
+            return autoGraphResponse;
+        }
+
+        throw new AppException("Your selected skills could not be added to your profile.");
+    }
+
+    public AutoGraphResponse addUserWorkExperience(User user, AddUserWorkExperienceRequest updateUserWorkExperienceRequest) throws AppException {
+        UserWorkExperience userWorkExperience = new UserWorkExperience();
+        userWorkExperience.setUserId(user.getUserId());
+        userWorkExperience.setWorkExperienceDetails(updateUserWorkExperienceRequest.getWorkExperienceDetails());
+        userWorkExperience.setEndDate(updateUserWorkExperienceRequest.getEndDate());
+        userWorkExperience.setStartDate(updateUserWorkExperienceRequest.getStartDate());
+        UserWorkExperience uwe = (UserWorkExperience) userWorkExperienceRepository.save(userWorkExperience);
+
+        List<UserWorkExperienceSkillSet> userWorkExperienceSkillSetList = updateUserWorkExperienceRequest.getSkillSetList().stream().map(skillSetId -> {
+            UserWorkExperienceSkillSet userWorkExperienceSkillSet = new UserWorkExperienceSkillSet();
+            userWorkExperienceSkillSet.setUserWorkExperienceId(uwe.getUserWorkExperienceId());
+            userWorkExperienceSkillSet.setUserSkillSetId(skillSetId);
+            userWorkExperienceSkillSet = (UserWorkExperienceSkillSet) this.userWorkExperienceSkillSetRepository.save(userWorkExperienceSkillSet);
+            return userWorkExperienceSkillSet;
+        }).collect(Collectors.toList());
+
+        if(userWorkExperienceSkillSetList!=null && userWorkExperienceSkillSetList.size()>0)
+        {
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your work experience has been added to your profile.");
+            autoGraphResponse.setResponseData(userWorkExperienceSkillSetList);
+
+            return autoGraphResponse;
+        }
+
+        throw new AppException("Your work experience could not be added to your profile.");
+    }
+
+    public AutoGraphResponse addUserTechnicalTraining(User user, AddUserTechnicalTrainingRequest addUserTechnicalTrainingRequest) throws AppException {
+        List userTechnicalTrainings = addUserTechnicalTrainingRequest.getUserTechnicalTrainingList().stream().map(tt -> {
+
+            UserTechnicalTraining userTechnicalTraining = new UserTechnicalTraining();
+            if(tt.getUserTechnicalTrainingID()!=null)
+            {
+                userTechnicalTraining = userTechnicalTrainingRepository.getById(tt.getUserTechnicalTrainingID());
+            }
+
+            userTechnicalTraining.setUserId(user.getUserId());
+            userTechnicalTraining.setTechnicalTrainingDetails(tt.getTechnicalTrainingDetails());
+            userTechnicalTraining.setDateObtained(tt.getDateObtained());
+            userTechnicalTraining.setDateExpires(tt.getDateExpires());
+            userTechnicalTraining = (UserTechnicalTraining) userTechnicalTrainingRepository.save(userTechnicalTraining);
+            return userTechnicalTraining;
+        }).collect(Collectors.toList());
+
+        if(userTechnicalTrainings!=null && userTechnicalTrainings.size()>0)
+        {
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your trainings have been added to your profile.");
+            autoGraphResponse.setResponseData(userTechnicalTrainings);
+
+            return autoGraphResponse;
+        }
+
+        throw new AppException("Your work experience could not be added to your profile.");
+    }
+
+//    public AutoGraphResponse loginCustomer(LoginRequest loginRequest) {
+//        try {
+//            final Authentication authentication = authenticationManager.authenticate(
+//                    //                new AuthenticationManagerCustom(loginUser.getEmailAddress(), loginUser.getPassword())
+//                    //                new PayAccessAuthenticationProvider()
+//
+//                    new UsernamePasswordAuthenticationToken(
+//                            loginRequest.getEmailAddress(),
+//                            loginRequest.getPassword()
+//                    )
+//            );
+//
+//            System.out.println(authentication.isAuthenticated());
+//            //logger.info("{}", authentication.isAuthenticated());
+//            //logger.info("{}", authentication.getPrincipal());
+//            //        logger.info("{}>>>>", loginUser.getEmailAddress());
+//
+//
+//            SecurityContextHolder.getContext().setAuthentication(authentication);
+//            final String token = "";//jwtTokenUtil.generateToken(authentication);
+//            //logger.info("token...{}", token);
+//
+//
+//
+//
+//            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+//            autoGraphResponse.setStatus(0);
+//            autoGraphResponse.setStatusMessage("Login successful.");
+//            autoGraphResponse.setResponseData(token);
+//
+//            return autoGraphResponse;
+//        }
+//        catch(ProviderNotFoundException //| JsonProcessingException
+//                e)
+//        {
+//
+//
+//            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+//            autoGraphResponse.setStatus(0);
+//            autoGraphResponse.setStatusMessage("Invalid username/password combination. Please provide a valid username/password to log in");
+//            autoGraphResponse.setResponseData(null);
+//
+//            return autoGraphResponse;
+//        }
+//
+//    }
+}
