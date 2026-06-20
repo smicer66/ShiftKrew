@@ -23,7 +23,7 @@ public class CreateNewUserAccountRequest {
     private String emailAddress;
 
     @NotBlank(message="Provide your password.")
-    @Size(min=8, message="Your password must be at least 8 characters long.")
+    @Size(min=8, message="Your secure password must be at least 8 characters long.")
     private String password;
 
     @Size(min=8, max=12, message="Provide a valid referral code.")
