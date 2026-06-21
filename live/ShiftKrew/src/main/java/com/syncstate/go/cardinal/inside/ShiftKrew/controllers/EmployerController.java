@@ -49,4 +49,14 @@ public class EmployerController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
+    @RequestMapping(value="/preview-invoice", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> previewInvoice(@RequestBody PostAJobRequest postAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.previewInvoice(user, postAJobRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
 }

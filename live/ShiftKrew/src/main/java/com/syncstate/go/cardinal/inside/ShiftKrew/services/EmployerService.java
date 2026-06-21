@@ -54,6 +54,12 @@ public class EmployerService {
     @Value("${insurance.pension.percentage}")
     private double totalInsurancePensionPercent;
 
+    @Value("${shift.krew.charge.percentage}")
+    private double shiftKrewChargePercent;
+
+    @Value("${shift.krew.vat.percentage}")
+    private double shiftKrewVAT;
+
 
     public AutoGraphResponse addEmployerToUserAccount(User user, AddEmployerRequest addEmployerRequest) {
 
@@ -173,7 +179,7 @@ public class EmployerService {
             invoice.setTotalOtherAmount(totalOtherAmount);
             Invoice invoiceCreated = (Invoice)invoiceRepository.save(invoice);
 
-            postAJobRequest.getJobSchedule().stream().map(js -> {
+            Double totalEmployeePay = postAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
                 DecimalFormat f = new DecimalFormat("##.00");
                 DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
                 Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
@@ -207,8 +213,33 @@ public class EmployerService {
                 invoiceItem2.setTotalAmount(((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
                 this.invoiceItemRepository.save(invoiceItem2);
 
-                return null;
-            });
+                return
+                        js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded()
+                        +
+                        js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100
+                        +
+                        (((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
+            }).sum();
+
+
+            InvoiceItem invoiceItemServiceCharge = new InvoiceItem();
+            invoiceItemServiceCharge.setInvoiceId(invoiceCreated.getInvoiceId());
+            invoiceItemServiceCharge.setItemDescription("ShiftKrew charges");
+            invoiceItemServiceCharge.setItemDescription2(shiftKrewChargePercent + "% of total cost");
+            invoiceItemServiceCharge.setQty(1);
+            invoiceItemServiceCharge.setRate(shiftKrewChargePercent * totalEmployeePay / 100);
+            invoiceItemServiceCharge.setTotalAmount(shiftKrewChargePercent * totalEmployeePay / 100);
+            this.invoiceItemRepository.save(invoiceItemServiceCharge);
+
+
+            InvoiceItem invoiceItemVAT = new InvoiceItem();
+            invoiceItemVAT.setInvoiceId(invoiceCreated.getInvoiceId());
+            invoiceItemVAT.setItemDescription("VAT");
+            invoiceItemVAT.setItemDescription2(shiftKrewVAT + "%");
+            invoiceItemVAT.setQty(1);
+            invoiceItemVAT.setRate((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            invoiceItemVAT.setTotalAmount((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            this.invoiceItemRepository.save(invoiceItemVAT);
 
 
             CasualJobDTO casualJobDTO = new CasualJobDTO();
@@ -230,6 +261,153 @@ public class EmployerService {
 
 
         throw new AppException("We could not post your job. Please try again.");
+
+
+    }
+
+
+    public AutoGraphResponse previewInvoice(User user, PostAJobRequest postAJobRequest) throws AppException {
+
+        Double totalWages = 0.00;
+        Double totalInsurancePension = 0.00;
+        Double totalHolidayPay = 0.00;
+        Double totalOtherAmount = 0.00;
+
+        UserEmployer userEmployer = this.userEmployerRepository.getById(postAJobRequest.getUserEmployerId());
+
+        List<CasualJobSchedule> casualJobScheduleList = postAJobRequest.getJobSchedule().stream().map(js -> {
+            CasualJobSchedule casualJobSchedule = new CasualJobSchedule();
+            casualJobSchedule.setBonusPerHour(js.getBonusPerHour());
+            casualJobSchedule.setPayPerHour(js.getPayPerHour());
+            casualJobSchedule.setScheduleEndDate(js.getScheduleEndDate());
+            casualJobSchedule.setScheduleStartDate(js.getScheduleStartDate());
+            casualJobSchedule.setEmployeesNeeded(js.getEmployeesNeeded());
+            return casualJobSchedule;
+        }).collect(Collectors.toList());
+
+        double totalWagesPerHour = postAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
+            Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+            long minutes = d.toMinutes();
+            return minutes * js.getEmployeesNeeded() * js.getPayPerHour()/60;
+        }).sum();
+        long totalMinutes = postAJobRequest.getJobSchedule().stream().mapToLong(js -> {
+            Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+            long minutes = d.toMinutes();
+            return minutes;
+        }).sum();
+        totalHolidayPay = holidayPayPercent * totalWagesPerHour/100;
+        totalInsurancePension = (totalHolidayPay + totalWagesPerHour) * totalInsurancePensionPercent;
+
+        if(casualJobScheduleList!=null && casualJobScheduleList.size()>0)
+        {
+
+            List<Invoice> employerInvoices = this.invoiceRepository.getInvoicesByEmployerId(postAJobRequest.getUserEmployerId());
+            int invoiceNumber = employerInvoices.size() + 1;
+            String invoiceNumberPadded = StringUtils.left(Integer.toString(invoiceNumber), 4);
+
+            Invoice invoice = new Invoice();
+            invoice.setCasualJobDate(casualJobScheduleList.get(0).getScheduleStartDate().toLocalDate());
+            invoice.setInvoiceDescription("Employee recruitment - "+ postAJobRequest.getSkillName());
+            invoice.setInvoiceNumber("INV-" +
+                    Integer.toString(casualJobScheduleList.get(0).getScheduleStartDate().toLocalDate().getYear())
+                    + "-" + invoiceNumberPadded
+            );
+            invoice.setBillToAddressCity(userEmployer.getEmployerContactAddressCity());
+            invoice.setBillToAddressState(userEmployer.getEmployerContactAddressState());
+            invoice.setBillToAddressCountry(userEmployer.getEmployerContactAddressCountry());
+            invoice.setBillToPostCodeAddress(userEmployer.getEmployerContactAddressPostCode());
+            invoice.setBillToLineAddress(userEmployer.getEmployerContactAddress());
+            invoice.setBillToFullName(user.getFirstName() + " " + user.getLastName());
+            invoice.setUserEmployerId(userEmployer.getUserEmployerId());
+            invoice.setTotalWages(totalWages);
+            invoice.setTotalInsurancePension(totalInsurancePension);
+            invoice.setTotalHolidayPay(totalHolidayPay);
+            invoice.setTotalOtherAmount(totalOtherAmount);
+
+            Double totalEmployeePay = postAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
+                DecimalFormat f = new DecimalFormat("##.00");
+                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+                double workPeriodInHrs = Math.round(d.toMinutes() / 60);
+                return
+                        js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded()
+                        +
+                        js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100
+                        +
+                        (((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
+            }).sum();
+
+
+
+            List<List<InvoiceItem>> invoiceItemList = postAJobRequest.getJobSchedule().stream().map(js -> {
+                DecimalFormat f = new DecimalFormat("##.00");
+                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+                double workPeriodInHrs = Math.round(d.toMinutes() / 60);
+
+                InvoiceItem invoiceItem = new InvoiceItem();
+                invoiceItem.setItemDescription("Wages - " + f.format(workPeriodInHrs) + " hours");
+                invoiceItem.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + postAJobRequest.getSkillName());
+                invoiceItem.setQty(js.getEmployeesNeeded());
+                invoiceItem.setRate(js.getPayPerHour());
+                invoiceItem.setTotalAmount(js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded());
+
+                InvoiceItem invoiceItem1 = new InvoiceItem();
+                invoiceItem1.setItemDescription("Holiday Pay");
+                invoiceItem1.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + f.format(holidayPayPercent) + "% of wages");
+                invoiceItem1.setQty(js.getEmployeesNeeded());
+                invoiceItem1.setRate(js.getPayPerHour());
+                invoiceItem1.setTotalAmount(js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100);
+
+                InvoiceItem invoiceItem2 = new InvoiceItem();
+                invoiceItem2.setItemDescription("NI and Pension");
+                invoiceItem2.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + f.format(totalInsurancePensionPercent) + "% of total earnings");
+                invoiceItem2.setQty(js.getEmployeesNeeded());
+                invoiceItem2.setRate(js.getPayPerHour());
+                invoiceItem2.setTotalAmount(((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
+
+                List<InvoiceItem> li = new ArrayList<>();
+                li.add(invoiceItem);
+                li.add(invoiceItem1);
+                li.add(invoiceItem2);
+
+                return li;
+            }).collect(Collectors.toList());
+
+
+            List<InvoiceItem> li = new ArrayList<>();
+            InvoiceItem invoiceItemServiceCharge = new InvoiceItem();
+            invoiceItemServiceCharge.setItemDescription("ShiftKrew charges");
+            invoiceItemServiceCharge.setItemDescription2(shiftKrewChargePercent + "% of total cost");
+            invoiceItemServiceCharge.setQty(1);
+            invoiceItemServiceCharge.setRate(shiftKrewChargePercent * totalEmployeePay / 100);
+            invoiceItemServiceCharge.setTotalAmount(shiftKrewChargePercent * totalEmployeePay / 100);
+            li.add(invoiceItemServiceCharge);
+
+
+            InvoiceItem invoiceItemVAT = new InvoiceItem();
+            invoiceItemVAT.setItemDescription("VAT");
+            invoiceItemVAT.setItemDescription2(shiftKrewVAT + "%");
+            invoiceItemVAT.setQty(1);
+            invoiceItemVAT.setRate((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            invoiceItemVAT.setTotalAmount((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            li.add(invoiceItemVAT);
+
+            invoiceItemList.add(li);
+
+
+
+
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Invoice for service");
+            autoGraphResponse.setResponseData(invoiceItemList);
+
+            return autoGraphResponse;
+        }
+
+
+        throw new AppException("We could not provide an invoice at the moment.");
 
 
     }
