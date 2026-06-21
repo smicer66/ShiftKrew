@@ -6,9 +6,11 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.InstanceExistsException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.*;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserDTO;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserDataDTO;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserEmployerDTO;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserTechnicalTrainingRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.CreateNewUserAccountRequest;
-import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserSkillSetRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserSkillRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserWorkExperienceRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
@@ -30,7 +32,7 @@ public class UserService {
     UserReferralRepository userReferralRepository;
 
     @Autowired
-    UserSkillSetRepository userSkillSetRepository;
+    UserSkillRepository userSkillSetRepository;
 
     @Autowired
     UserWorkExperienceRepository userWorkExperienceRepository;
@@ -40,6 +42,9 @@ public class UserService {
 
     @Autowired
     UserTechnicalTrainingRepository userTechnicalTrainingRepository;
+
+    @Autowired
+    UserEmployerRepository userEmployerRepository;
 
 
 
@@ -102,7 +107,7 @@ public class UserService {
 
         AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
         autoGraphResponse.setStatus(0);
-        autoGraphResponse.setStatusMessage("Your Autograph account has been setup successfully for you.");
+        autoGraphResponse.setStatusMessage("Your ShiftKrew account has been setup successfully for you.");
         autoGraphResponse.setResponseData(userDTO);
 
         return autoGraphResponse;
@@ -115,25 +120,25 @@ public class UserService {
         );
     }
 
-    public AutoGraphResponse addUserSkillset(User user, AddUserSkillSetRequest updateUserSkillSetRequest) throws AppException {
+    public AutoGraphResponse addUserSkillset(User user, AddUserSkillRequest updateUserSkillSetRequest) throws AppException {
 
-        List<UserSkillSet> skillSetsCreated = updateUserSkillSetRequest.getSkillSetList().stream().map(skill -> {
-            UserSkillSet userSkillSet = new UserSkillSet();
-            userSkillSet.setUserId(user.getUserId());
-            userSkillSet.setIsValid(true);
-            userSkillSet.setSkillSetId(skill.getSkillSetId());
-            userSkillSet.setSkillSetExpertiseLevel(skill.getExpertiseLevel());
-            userSkillSet = (UserSkillSet) userSkillSetRepository.save(userSkillSet);
-            return userSkillSet;
+        List<UserSkill> skillCreated = updateUserSkillSetRequest.getSkillSetList().stream().map(skill -> {
+            UserSkill userSkill = new UserSkill();
+            userSkill.setUserId(user.getUserId());
+            userSkill.setIsValid(true);
+            userSkill.setSkillId(skill.getSkillId());
+            userSkill.setSkillExpertiseLevel(skill.getExpertiseLevel());
+            userSkill = (UserSkill) userSkillSetRepository.save(userSkill);
+            return userSkill;
         }).collect(Collectors.toList());
 
 
-        if(skillSetsCreated!=null && skillSetsCreated.size()>0)
+        if(skillCreated!=null && skillCreated.size()>0)
         {
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
             autoGraphResponse.setStatus(0);
             autoGraphResponse.setStatusMessage("Your profile has been updated to reflect your skillset.");
-            autoGraphResponse.setResponseData(skillSetsCreated);
+            autoGraphResponse.setResponseData(skillCreated);
 
             return autoGraphResponse;
         }
@@ -149,20 +154,20 @@ public class UserService {
         userWorkExperience.setStartDate(updateUserWorkExperienceRequest.getStartDate());
         UserWorkExperience uwe = (UserWorkExperience) userWorkExperienceRepository.save(userWorkExperience);
 
-        List<UserWorkExperienceSkillSet> userWorkExperienceSkillSetList = updateUserWorkExperienceRequest.getSkillSetList().stream().map(skillSetId -> {
-            UserWorkExperienceSkillSet userWorkExperienceSkillSet = new UserWorkExperienceSkillSet();
-            userWorkExperienceSkillSet.setUserWorkExperienceId(uwe.getUserWorkExperienceId());
-            userWorkExperienceSkillSet.setUserSkillSetId(skillSetId);
-            userWorkExperienceSkillSet = (UserWorkExperienceSkillSet) this.userWorkExperienceSkillSetRepository.save(userWorkExperienceSkillSet);
-            return userWorkExperienceSkillSet;
+        List<UserWorkExperienceSkill> userWorkExperienceSkillList = updateUserWorkExperienceRequest.getUserSkillList().stream().map(userSkillId -> {
+            UserWorkExperienceSkill userWorkExperienceSkill = new UserWorkExperienceSkill();
+            userWorkExperienceSkill.setUserWorkExperienceId(uwe.getUserWorkExperienceId());
+            userWorkExperienceSkill.setUserSkillId(userSkillId);
+            userWorkExperienceSkill = (UserWorkExperienceSkill) this.userWorkExperienceSkillSetRepository.save(userWorkExperienceSkill);
+            return userWorkExperienceSkill;
         }).collect(Collectors.toList());
 
-        if(userWorkExperienceSkillSetList!=null && userWorkExperienceSkillSetList.size()>0)
+        if(userWorkExperienceSkillList!=null && userWorkExperienceSkillList.size()>0)
         {
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
             autoGraphResponse.setStatus(0);
             autoGraphResponse.setStatusMessage("Your work experience has been added to your profile.");
-            autoGraphResponse.setResponseData(userWorkExperienceSkillSetList);
+            autoGraphResponse.setResponseData(userWorkExperienceSkillList);
 
             return autoGraphResponse;
         }
@@ -198,6 +203,29 @@ public class UserService {
         }
 
         throw new AppException("Your work experience could not be added to your profile.");
+    }
+
+    public AutoGraphResponse getUserData(User user) {
+        List<UserEmployer> userEmployerList = this.userEmployerRepository.getUserEmployerByUserId(user.getUserId());
+        UserDataDTO userDataDTO = new UserDataDTO();
+        List<UserEmployerDTO> userEmployerDTOList = userEmployerList.stream().map(ue -> {
+            UserEmployerDTO ued = new UserEmployerDTO();
+            BeanUtils.copyProperties(ue, ued);
+            ued.setUserEmployerID(ue.getUserEmployerId());
+            return ued;
+        }).collect(Collectors.toList());
+        userDataDTO.setEmployerDataList(userEmployerList!=null && userEmployerList.size()>0 ? userEmployerDTOList : null);
+        userDataDTO.setUsername(user.getUsername());
+        userDataDTO.setFirstName(user.getFirstName());
+        userDataDTO.setLastName(user.getLastName());
+        userDataDTO.setStatus(user.getUserStatus().name());
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Data summary for current user");
+        autoGraphResponse.setResponseData(userDataDTO);
+
+        return autoGraphResponse;
     }
 
 //    public AutoGraphResponse loginCustomer(LoginRequest loginRequest) {

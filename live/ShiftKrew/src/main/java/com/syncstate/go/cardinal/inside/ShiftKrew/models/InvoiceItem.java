@@ -10,27 +10,36 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Getter
 @Setter
-@Table(name = "user_work_experience_skill_sets")
-public class UserWorkExperienceSkillSet implements Serializable {
+@Table(name = "invoice_items")
+public class InvoiceItem implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long UserWorkExperienceSkillSetId;
+    private Long invoiceItemId;
 
-    @Column(name = "userWorkExperienceId", nullable = false)
-    private Long userWorkExperienceId;
+    @Column(name = "invoiceId", nullable = false)
+    private Long invoiceId;
 
-    @Column(name = "userSkillSetId", nullable = false)
-    private Long userSkillSetId;
+    @Column(name = "itemDescription", nullable = false)
+    private String itemDescription;
 
+    @Column(name = "itemDescription2", nullable = false)
+    private String itemDescription2;
 
+    @Column(name = "qty", nullable = false)
+    private int qty;
 
+    @Column(name = "rate", nullable = false)
+    private Double rate;
+
+    @Column(name = "totalAmount", nullable = false)
+    private Double totalAmount;
 
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)

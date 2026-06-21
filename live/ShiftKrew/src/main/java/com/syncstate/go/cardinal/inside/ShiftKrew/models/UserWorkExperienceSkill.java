@@ -11,29 +11,23 @@ import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Getter
 @Setter
-@Table(name = "user_work_experiences")
-public class UserWorkExperience implements Serializable {
+@Table(name = "user_work_experience_skills")
+public class UserWorkExperienceSkill implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long UserWorkExperienceSkillId;
+
+    @Column(name = "userWorkExperienceId", nullable = false)
     private Long userWorkExperienceId;
 
-    @Column(name = "userId", nullable = false)
-    private Long userId;
+    @Column(name = "userSkillId", nullable = false)
+    private Long userSkillId;
 
-    @Column(name = "startDate", nullable = false)
-    private Date startDate;
-
-    @Column(name = "endDate", nullable = true)
-    private Date endDate;
-
-    @Column(name = "workExperienceDetails", nullable = false)
-    private String workExperienceDetails;
 
 
 

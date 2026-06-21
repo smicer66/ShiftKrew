@@ -22,7 +22,7 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = "users")
-@JsonIgnoreProperties(value = { "password", "hibernateLazyInitializer", "handler" })
+@JsonIgnoreProperties(value = { "password", "hibernateLazyInitializer", "handler" }, ignoreUnknown = true)
 public class User implements Serializable, UserDetails {
 
     @Id

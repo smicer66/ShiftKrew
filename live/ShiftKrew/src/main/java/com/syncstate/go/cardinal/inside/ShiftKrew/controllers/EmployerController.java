@@ -1,0 +1,52 @@
+package com.syncstate.go.cardinal.inside.ShiftKrew.controllers;
+
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.User;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.*;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
+import com.syncstate.go.cardinal.inside.ShiftKrew.services.AuthService;
+import com.syncstate.go.cardinal.inside.ShiftKrew.services.EmployerService;
+import com.syncstate.go.cardinal.inside.ShiftKrew.services.TokenService;
+import com.syncstate.go.cardinal.inside.ShiftKrew.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/services/employer")
+public class EmployerController {
+
+
+    @Autowired
+    private HttpServletRequest request;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private EmployerService employerService;
+
+    @RequestMapping(value="/add-employer-to-user-account", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> addEmployerToUserAccount(@RequestBody AddEmployerRequest addUserSkillSetRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.addEmployerToUserAccount(user, addUserSkillSetRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+    @RequestMapping(value="/post-a-casual-job", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> postACasualJob(@RequestBody PostAJobRequest postAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.postACasualJob(user, postAJobRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+}

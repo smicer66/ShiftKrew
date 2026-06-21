@@ -16,24 +16,42 @@ import java.util.Date;
 @Entity
 @Getter
 @Setter
-@Table(name = "user_work_experiences")
-public class UserWorkExperience implements Serializable {
+@Table(name = "user_employers")
+public class UserEmployer implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userWorkExperienceId;
+    private Long userEmployerId;
 
     @Column(name = "userId", nullable = false)
     private Long userId;
 
-    @Column(name = "startDate", nullable = false)
-    private Date startDate;
+    @Column(name = "employerName", nullable = false)
+    private String employerName;
 
-    @Column(name = "endDate", nullable = true)
-    private Date endDate;
+    @Column(name = "employerContactAddress", nullable = false)
+    private String employerContactAddress;
 
-    @Column(name = "workExperienceDetails", nullable = false)
-    private String workExperienceDetails;
+    @Column(name = "employerContactAddressPostCode", nullable = false)
+    private String employerContactAddressPostCode;
+
+    @Column(name = "employerContactMobile", nullable = false)
+    private String employerContactMobile;
+
+    @Column(name = "employerContactEmail", nullable = false)
+    private String employerContactEmail;
+
+    @Column(name = "employerContactAddressCity", nullable = false)
+    private String employerContactAddressCity;
+
+    @Column(name = "employerContactAddressState", nullable = false)
+    private String employerContactAddressState;
+
+    @Column(name = "employerContactAddressCountry", nullable = false)
+    private String employerContactAddressCountry;
+
+    @Column(name = "isActive", nullable = true)
+    private Boolean isActive;
 
 
 

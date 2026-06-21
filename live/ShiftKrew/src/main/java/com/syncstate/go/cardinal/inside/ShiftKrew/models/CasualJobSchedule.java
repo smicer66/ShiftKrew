@@ -11,31 +11,34 @@ import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Getter
 @Setter
-@Table(name = "user_work_experiences")
-public class UserWorkExperience implements Serializable {
+@Table(name = "casual_job_schedules")
+public class CasualJobSchedule implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userWorkExperienceId;
+    private Long casualJobScheduleId;
 
-    @Column(name = "userId", nullable = false)
-    private Long userId;
+    @Column(name = "jobId", nullable = false)
+    private Long jobId;
 
-    @Column(name = "startDate", nullable = false)
-    private Date startDate;
+    @Column(name = "scheduleStartDate", nullable = false)
+    private LocalDateTime scheduleStartDate;
 
-    @Column(name = "endDate", nullable = true)
-    private Date endDate;
+    @Column(name = "scheduleEndDate", nullable = true)
+    private LocalDateTime scheduleEndDate;
 
-    @Column(name = "workExperienceDetails", nullable = false)
-    private String workExperienceDetails;
+    @Column(name = "employeesNeeded", nullable = false)
+    private int employeesNeeded;
 
+    @Column(name = "payPerHour", nullable = false)
+    private Double payPerHour;
 
+    @Column(name = "bonusPerHour", nullable = true)
+    private Double bonusPerHour;
 
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)

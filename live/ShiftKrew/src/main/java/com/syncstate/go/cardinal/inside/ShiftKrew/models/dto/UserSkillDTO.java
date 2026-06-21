@@ -6,21 +6,21 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UserSkillSetDTO {
+public class UserSkillDTO {
 
-    private Long skillSetId;
+    private Long skillId;
 
     private int expertiseLevel;
 
 
-    public UserSkillSetDTO()
+    public UserSkillDTO()
     {
 
     }
 
-    public UserSkillSetDTO(Long skillSetId, int expertiseLevel)
+    public UserSkillDTO(Long skillId, int expertiseLevel)
     {
-        this.skillSetId = skillSetId;
+        this.skillId = skillId;
         this.expertiseLevel = expertiseLevel;
     }
 }

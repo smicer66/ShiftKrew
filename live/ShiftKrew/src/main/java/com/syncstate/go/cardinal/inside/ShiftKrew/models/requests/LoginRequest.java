@@ -15,7 +15,4 @@ public class LoginRequest {
     @NotBlank(message="Provide your password.")
     private String password;
 
-
-    @NotBlank(message="Incomplete data in request")
-    private Long organisationId;
 }

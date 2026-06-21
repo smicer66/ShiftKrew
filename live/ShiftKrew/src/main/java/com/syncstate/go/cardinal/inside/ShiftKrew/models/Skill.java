@@ -15,26 +15,18 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "user_skillsets")
-public class UserSkillSet implements Serializable {
+@Table(name = "skills")
+public class Skill implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userSkillSetId;
+    private Long skillId;
 
-    @Column(name = "userId", nullable = false)
-    private Long userId;
-
-    @Column(name = "skillSetId", nullable = false)
-    private Long skillSetId;
+    @Column(name = "skillName", nullable = false)
+    private String skillName;
 
     @Column(name = "isValid", nullable = false)
     private Boolean isValid;
-
-    @Column(name = "skillSetExpertiseLevel", nullable = false)
-    private int skillSetExpertiseLevel;
-
-
 
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)

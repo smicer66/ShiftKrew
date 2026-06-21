@@ -52,7 +52,7 @@ public class UserController {
     }
 
     @RequestMapping(value="/add-user-skillset", method = RequestMethod.POST)
-    public ResponseEntity<AutoGraphResponse> updateUserSkillset(@RequestBody AddUserSkillSetRequest addUserSkillSetRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    public ResponseEntity<AutoGraphResponse> updateUserSkillset(@RequestBody AddUserSkillRequest addUserSkillSetRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {
         String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
         User user = tokenService.getUserFromToken(request);
@@ -87,5 +87,14 @@ public class UserController {
     {
         ResponseEntity autoGraphResponse = authService.doLogin(loginRequest);
         return autoGraphResponse;
+    }
+
+
+    @RequestMapping(value="/get-user-data")
+    public ResponseEntity<AutoGraphResponse> getUserData() throws JsonProcessingException {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+        AutoGraphResponse autoGraphResponse = userService.getUserData(user);
+        return ResponseEntity.ok().body(autoGraphResponse);
     }
 }
