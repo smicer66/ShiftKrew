@@ -28,4 +28,7 @@ public class CreateNewUserAccountRequest {
 
     @Size(min=8, max=12, message="Provide a valid referral code.")
     private String referralCode;
+
+    @NotBlank(message="We can not determine if this is an Employee/Employer sign up.")
+    private String role;
 }

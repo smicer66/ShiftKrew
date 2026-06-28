@@ -95,6 +95,7 @@ public class SmartBankingAuthenticationProvider implements AuthenticationProvide
         String jwe = jweAuth.getToken();
 
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + us.getUserRole().name()));
         UsernamePasswordAuthenticationToken r = new UsernamePasswordAuthenticationToken(us, password, authorities); // (4)
         System.out.println("r subject..." + r.getPrincipal());
         return r;

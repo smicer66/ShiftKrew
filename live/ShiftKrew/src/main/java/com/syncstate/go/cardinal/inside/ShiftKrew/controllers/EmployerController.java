@@ -59,4 +59,14 @@ public class EmployerController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
+
+    @RequestMapping(value="/cancel-a-casual-job", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> cancelACasualJob(@RequestBody CancelAJobRequest cancelAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.cancelACasualJob(user, cancelAJobRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
 }

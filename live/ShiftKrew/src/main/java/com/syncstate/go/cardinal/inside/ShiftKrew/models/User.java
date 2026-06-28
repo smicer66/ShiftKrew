@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.syncstate.go.cardinal.inside.ShiftKrew.deserializers.TimestampDeserializer;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.Role;
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.UserStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.serializers.JsonDateTimeSerializer;
 import jakarta.persistence.*;
@@ -44,6 +45,10 @@ public class User implements Serializable, UserDetails {
     @Column(name = "userStatus", nullable = false)
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus;
+
+    @Column(name = "userRole", nullable = true)
+    @Enumerated(EnumType.STRING)
+    private Role userRole;
 
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)

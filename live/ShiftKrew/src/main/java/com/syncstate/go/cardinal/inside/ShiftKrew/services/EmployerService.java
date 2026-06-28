@@ -1,9 +1,7 @@
 package com.syncstate.go.cardinal.inside.ShiftKrew.services;
 
 
-import com.syncstate.go.cardinal.inside.ShiftKrew.enums.TaskScheduleIntervalType;
-import com.syncstate.go.cardinal.inside.ShiftKrew.enums.TaskScheduleType;
-import com.syncstate.go.cardinal.inside.ShiftKrew.enums.UserStatus;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.*;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.InstanceExistsException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.*;
@@ -20,11 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,11 @@ public class EmployerService {
     @Value("${shift.krew.vat.percentage}")
     private double shiftKrewVAT;
 
+    @Value("${pay.to.bank.account.id}")
+    private Long payToBankAccountId;
+
+    DecimalFormat f = new DecimalFormat("##.00");
+    DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy MM dd");
 
     public AutoGraphResponse addEmployerToUserAccount(User user, AddEmployerRequest addEmployerRequest) {
 
@@ -96,12 +102,17 @@ public class EmployerService {
         return autoGraphResponse;
     }
 
+
+    @Transactional
     public AutoGraphResponse postACasualJob(User user, PostAJobRequest postAJobRequest) throws AppException {
 
-        Double totalWages = 0.00;
+        //Double totalWages = 0.00;
         Double totalInsurancePension = 0.00;
         Double totalHolidayPay = 0.00;
         Double totalOtherAmount = 0.00;
+
+        if(!user.getUserRole().equals(Role.EMPLOYER))
+            throw new AppException("Only employers can create a casual job.");
 
         UserEmployer userEmployer = this.userEmployerRepository.getById(postAJobRequest.getUserEmployerId());
 
@@ -113,6 +124,9 @@ public class EmployerService {
         casualJob.setDressCode(postAJobRequest.getDressCode());
         casualJob.setAutoSelectFromFavorite(postAJobRequest.getAutoSelectFromFavorite());
         casualJob.setSkillId(postAJobRequest.getSkillId());
+        casualJob.setCasualJobStatus(CasualJobStatus.OPEN);
+        casualJob.setSubmittedByUserEmployerId(userEmployer.getUserEmployerId());
+        casualJob.setSubmittedByUserId(userEmployer.getUserId());
         CasualJob casualJobCreated = (CasualJob) casualJobRepository.save(casualJob);
 
         if(postAJobRequest.getAutoSelectFromFavorite().equals(Boolean.TRUE))
@@ -173,15 +187,16 @@ public class EmployerService {
             invoice.setBillToFullName(user.getFirstName() + " " + user.getLastName());
             invoice.setCasualJobId(casualJobCreated.getCasualJobId());
             invoice.setUserEmployerId(userEmployer.getUserEmployerId());
-            invoice.setTotalWages(totalWages);
+            invoice.setTotalWages(totalWagesPerHour);
             invoice.setTotalInsurancePension(totalInsurancePension);
             invoice.setTotalHolidayPay(totalHolidayPay);
             invoice.setTotalOtherAmount(totalOtherAmount);
+            invoice.setPayToBankAccountId(payToBankAccountId);
+            invoice.setIsCredit(false);
+            invoice.setInvoiceStatus(InvoiceStatus.ISSUED);
             Invoice invoiceCreated = (Invoice)invoiceRepository.save(invoice);
 
             Double totalEmployeePay = postAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
-                DecimalFormat f = new DecimalFormat("##.00");
-                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
                 Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
                 double workPeriodInHrs = Math.round(d.toMinutes() / 60);
 
@@ -245,8 +260,16 @@ public class EmployerService {
             CasualJobDTO casualJobDTO = new CasualJobDTO();
             BeanUtils.copyProperties(casualJob, casualJobDTO);
 
-            List<CasualJobScheduleDTO> casualJobScheduleDTOList = new ArrayList<>();
-            BeanUtils.copyProperties(casualJobScheduleList, casualJobScheduleDTOList);
+            List<CasualJobScheduleDTO> casualJobScheduleDTOList =  casualJobScheduleList.stream().map(cjs -> {
+                CasualJobScheduleDTO casualJobScheduleDTO = new CasualJobScheduleDTO();
+                casualJobScheduleDTO.setBonusPerHour(cjs.getBonusPerHour());
+                casualJobScheduleDTO.setScheduleEndDate(cjs.getScheduleEndDate());
+                casualJobScheduleDTO.setScheduleStartDate(cjs.getScheduleStartDate());
+                casualJobScheduleDTO.setPayPerHour(cjs.getPayPerHour());
+                casualJobScheduleDTO.setBonusPerHour(cjs.getBonusPerHour());
+                casualJobScheduleDTO.setEmployeesNeeded(cjs.getEmployeesNeeded());
+                return casualJobScheduleDTO;
+            }).collect(Collectors.toList());
 
             casualJobDTO.setCasualJobSchedule(casualJobScheduleDTOList);
 
@@ -266,9 +289,10 @@ public class EmployerService {
     }
 
 
+    @Transactional
     public AutoGraphResponse previewInvoice(User user, PostAJobRequest postAJobRequest) throws AppException {
 
-        Double totalWages = 0.00;
+        //Double totalWages = 0.00;
         Double totalInsurancePension = 0.00;
         Double totalHolidayPay = 0.00;
         Double totalOtherAmount = 0.00;
@@ -319,10 +343,12 @@ public class EmployerService {
             invoice.setBillToLineAddress(userEmployer.getEmployerContactAddress());
             invoice.setBillToFullName(user.getFirstName() + " " + user.getLastName());
             invoice.setUserEmployerId(userEmployer.getUserEmployerId());
-            invoice.setTotalWages(totalWages);
+            invoice.setTotalWages(totalWagesPerHour);
             invoice.setTotalInsurancePension(totalInsurancePension);
             invoice.setTotalHolidayPay(totalHolidayPay);
             invoice.setTotalOtherAmount(totalOtherAmount);
+            invoice.setInvoiceStatus(InvoiceStatus.DRAFT);
+            invoice.setIsCredit(false);
 
             Double totalEmployeePay = postAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
                 DecimalFormat f = new DecimalFormat("##.00");
@@ -340,8 +366,6 @@ public class EmployerService {
 
 
             List<List<InvoiceItem>> invoiceItemList = postAJobRequest.getJobSchedule().stream().map(js -> {
-                DecimalFormat f = new DecimalFormat("##.00");
-                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
                 Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
                 double workPeriodInHrs = Math.round(d.toMinutes() / 60);
 
@@ -410,5 +434,73 @@ public class EmployerService {
         throw new AppException("We could not provide an invoice at the moment.");
 
 
+    }
+
+    @Transactional
+    public AutoGraphResponse cancelACasualJob(User user, CancelAJobRequest cancelAJobRequest) throws AppException {
+        UserEmployer userEmployer = this.userEmployerRepository.getById(cancelAJobRequest.getUserEmployerId());
+        if(userEmployer==null)
+            throw new AppException("We could not detect your identity. Please log out and login again before repeating this action");
+
+        CasualJob casualJob = this.casualJobRepository.getById(cancelAJobRequest.getCasualJobId());
+        casualJob.setCasualJobStatus(CasualJobStatus.CANCELLED);
+        casualJob.setReasonForCancellation(cancelAJobRequest.getReasonForCancellation());
+        casualJob = (CasualJob) casualJobRepository.save(casualJob);
+
+        Collection<Invoice> invoiceList = this.invoiceRepository.getInvoicesByCreditFlag(true);
+        int invoiceNumber = invoiceList.size() + 1;
+        String invoiceNumberPadded = StringUtils.left(Integer.toString(invoiceNumber), 4);
+        Collection<CasualJobSchedule> casualJobScheduleCollection =
+                this.casualJobScheduleRepository.getCasualJobScheduleByCasualJobId(casualJob.getCasualJobId());
+
+        Optional<CasualJobSchedule> casualJobScheduleOpt = casualJobScheduleCollection.stream().filter(t -> t.getScheduleStartDate().getDayOfYear() ==
+                LocalDate.now().getDayOfYear()
+        ).findFirst();
+        CasualJobSchedule casualJobSchedule = casualJobScheduleOpt.get();
+
+        Invoice oldInvoice = (Invoice) this.invoiceRepository.
+                getInvoiceByCasualJobIdAndStatus(casualJob.getCasualJobId(),
+                        InvoiceStatus.ISSUED
+        );
+
+
+        double totalWagesPerHour = 1 * 60 * casualJobSchedule.getEmployeesNeeded() * casualJobSchedule.getPayPerHour()/60;
+        long totalMinutes = 1*60;
+        Double totalHolidayPay = holidayPayPercent * totalWagesPerHour/100;
+        Double totalInsurancePension = (totalHolidayPay + totalWagesPerHour) * totalInsurancePensionPercent;
+        double totalOtherAmount = 0.00;
+
+        Invoice invoice = new Invoice();
+        invoice.setCasualJobDate(LocalDate.now());
+        invoice.setInvoiceDescription("Employer Refund Due To Cancellation - "+ casualJob.getJobTitle());
+        invoice.setInvoiceNumber("INV-" +
+                Integer.toString(new Date().getYear())
+                + "-" + invoiceNumberPadded
+        );
+        invoice.setBillToAddressCity(userEmployer.getEmployerContactAddressCity());
+        invoice.setBillToAddressState(userEmployer.getEmployerContactAddressState());
+        invoice.setBillToAddressCountry(userEmployer.getEmployerContactAddressCountry());
+        invoice.setBillToPostCodeAddress(userEmployer.getEmployerContactAddressPostCode());
+        invoice.setBillToLineAddress(userEmployer.getEmployerContactAddress());
+        invoice.setBillToFullName(user.getFirstName() + " " + user.getLastName());
+        invoice.setCasualJobId(casualJob.getCasualJobId());
+        invoice.setUserEmployerId(userEmployer.getUserEmployerId());
+        invoice.setTotalWages(totalWagesPerHour);
+        invoice.setTotalInsurancePension(totalInsurancePension);
+        invoice.setTotalHolidayPay(totalHolidayPay);
+        invoice.setTotalOtherAmount(totalOtherAmount);
+        invoice.setPayToBankAccountId(payToBankAccountId);
+        invoice.setIsCredit(true);
+        invoice.setInvoiceStatus(InvoiceStatus.ISSUED);
+        Invoice invoiceCreated = (Invoice)invoiceRepository.save(invoice);
+
+        oldInvoice.setInvoiceStatus(InvoiceStatus.CANCELLED);
+        invoiceRepository.save(oldInvoice);
+
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Your casual job has been cancelled.");
+        return autoGraphResponse;
     }
 }

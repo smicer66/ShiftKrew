@@ -18,4 +18,7 @@ public interface UserEmployerRepository extends JpaRepository<UserEmployer, Long
 
     @Query("SELECT u FROM UserEmployer u WHERE u.userId  = :userId")
     List<UserEmployer> getUserEmployerByUserId(Long userId);
+
+    @Query("SELECT u FROM UserEmployer u WHERE u.userEmployerId  = :userEmployerId")
+    UserEmployer getUserEmployerByUserEmployerId(Long userEmployerId);
 }

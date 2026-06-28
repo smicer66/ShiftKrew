@@ -109,11 +109,20 @@ public AuthenticationManager authManager(HttpSecurity http) throws Exception {
                     auth.requestMatchers("/api/v1/user/validate-token").permitAll();
                     auth.requestMatchers("/api/v1/user/login").permitAll();
                     auth.requestMatchers("/api/v1/services/user/get-user-data").permitAll();
+                    auth.requestMatchers("/api/v1/services/employer/post-a-casual-job").permitAll();
+                    auth.requestMatchers("/api/v1/services/employer/preview-invoice").permitAll();
+
+                    auth.requestMatchers("/api/v1/services/bid/post-a-bid").permitAll();
+                    auth.requestMatchers("/api/v1/services/bid/cancel-bid").permitAll();
+                    auth.requestMatchers("/api/v1/services/bid/select-winning-bid").permitAll();
+
+
 
                     auth.anyRequest().authenticated();
 
 
                 })
+
                 .authenticationProvider(authProvider)
                 .build();
 

@@ -41,13 +41,13 @@ public class UserEmployer implements Serializable {
     @Column(name = "employerContactEmail", nullable = false)
     private String employerContactEmail;
 
-    @Column(name = "employerContactAddressCity", nullable = false)
+    @Column(name = "employerContactAddressCity", nullable = true)
     private String employerContactAddressCity;
 
-    @Column(name = "employerContactAddressState", nullable = false)
+    @Column(name = "employerContactAddressState", nullable = true)
     private String employerContactAddressState;
 
-    @Column(name = "employerContactAddressCountry", nullable = false)
+    @Column(name = "employerContactAddressCountry", nullable = true)
     private String employerContactAddressCountry;
 
     @Column(name = "isActive", nullable = true)

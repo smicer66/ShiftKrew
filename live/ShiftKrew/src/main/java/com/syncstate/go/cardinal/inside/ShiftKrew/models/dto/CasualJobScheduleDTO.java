@@ -17,9 +17,9 @@ public class CasualJobScheduleDTO {
 
     private int employeesNeeded;
 
-    private Boolean payPerHour;
+    private Double payPerHour;
 
-    private Boolean bonusPerHour;
+    private Double bonusPerHour;
 
 
     public CasualJobScheduleDTO()
@@ -27,7 +27,7 @@ public class CasualJobScheduleDTO {
 
     }
 
-    public CasualJobScheduleDTO(LocalDateTime scheduleStartDate, LocalDateTime scheduleEndDate, int employeesNeeded, Boolean payPerHour, Boolean bonusPerHour) {
+    public CasualJobScheduleDTO(LocalDateTime scheduleStartDate, LocalDateTime scheduleEndDate, int employeesNeeded, Double payPerHour, Double bonusPerHour) {
         this.scheduleStartDate = scheduleStartDate;
         this.scheduleEndDate = scheduleEndDate;
         this.employeesNeeded = employeesNeeded;

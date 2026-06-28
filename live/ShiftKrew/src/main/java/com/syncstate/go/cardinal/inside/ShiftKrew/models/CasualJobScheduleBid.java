@@ -4,7 +4,6 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.models;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.syncstate.go.cardinal.inside.ShiftKrew.deserializers.TimestampDeserializer;
-import com.syncstate.go.cardinal.inside.ShiftKrew.enums.CasualJobStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.serializers.JsonDateTimeSerializer;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,46 +15,27 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "casual_jobs")
-public class CasualJob implements Serializable {
+@Table(name = "casual_job_schedule_bids")
+public class CasualJobScheduleBid implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long casualJobId;
+    private Long casualJobScheduleBidId;
 
-    @Column(name = "jobTitle", nullable = false)
-    private String jobTitle;
+    @Column(name = "jobId", nullable = false)
+    private Long jobId;
 
-    @Column(name = "jobDetails", nullable = false)
-    private String jobDetails;
+    @Column(name = "jobScheduleId", nullable = false)
+    private Long jobScheduleId;
 
-    @Column(name = "dressCode", nullable = false)
-    private String dressCode;
+    @Column(name = "bidId", nullable = false)
+    private Long bidId;
 
-    @Column(name = "jobLineAddress", nullable = false)
-    private String jobLineAddress;
+    @Column(name = "bidOwnerId", nullable = true)
+    private Long bidOwnerId;
 
-    @Column(name = "jobAddressPostCode", nullable = false)
-    private String jobAddressPostCode;
-
-    @Column(name = "autoSelectFromFavorite", nullable = false)
-    private Boolean autoSelectFromFavorite;
-
-    @Column(name = "skillId", nullable = false)
-    private Long skillId;
-
-    @Column(name = "submittedByUserId", nullable = false)
-    private Long submittedByUserId;
-
-    @Column(name = "submittedByUserEmployerId", nullable = false)
-    private Long submittedByUserEmployerId;
-
-    @Column(name = "casualJobStatus", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private CasualJobStatus casualJobStatus;
-
-    @Column(name = "reasonForCancellation", nullable = true)
-    private String reasonForCancellation;
+    @Column(name = "isWon", nullable = true)
+    private Boolean isWon;
 
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)

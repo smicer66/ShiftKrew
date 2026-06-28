@@ -90,6 +90,10 @@ public class TokenProvider implements Serializable {
     public String generateToken(Authentication userDetails) throws JsonProcessingException {
         Map<String, Object> claims = new HashMap<>();
         claims.put(roleKey, userDetails.getAuthorities());
+        userDetails.getAuthorities().stream().map(t -> {
+            System.out.println(t);
+            return  null;
+        });
 //        claims.put("username", ((User)(userDetails.getPrincipal())).getEmailAddress());
         System.out.println(">>>>>>>>>>>>>>>>>>>>");
         System.out.println(userDetails.getPrincipal());

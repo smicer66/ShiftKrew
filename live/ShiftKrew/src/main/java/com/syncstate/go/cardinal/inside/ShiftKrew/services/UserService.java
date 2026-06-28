@@ -1,6 +1,7 @@
 package com.syncstate.go.cardinal.inside.ShiftKrew.services;
 
 
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.Role;
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.UserStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.InstanceExistsException;
@@ -90,6 +91,7 @@ public class UserService {
         user.setFirstName(createNewUserAccountRequest.getFirstName());
         user.setLastName(createNewUserAccountRequest.getLastName());
         user.setUsername(createNewUserAccountRequest.getEmailAddress());
+        user.setUserRole(Role.valueOf(createNewUserAccountRequest.getRole()));
         user = (User) userRepository.save(user);
 
         if(createNewUserAccountRequest.getReferralCode()!=null)
@@ -103,7 +105,7 @@ public class UserService {
 
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(user, userDTO);
-
+        userDTO.setRole(user.getUserRole().value);
 
         AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
         autoGraphResponse.setStatus(0);

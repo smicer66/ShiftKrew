@@ -2,6 +2,7 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.models.requests;
 
 
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.CasualJobSchedule;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.CasualJobScheduleDTO;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,7 @@ public class PostAJobRequest {
     private String skillName;
 
     @NotBlank(message="Provide the schedule of the casual job.")
-    private List<CasualJobSchedule> jobSchedule;
+    private List<CasualJobScheduleDTO> jobSchedule;
 
     @NotBlank(message="Provide the description of the casual job.")
     private String jobDetails;
@@ -43,5 +44,5 @@ public class PostAJobRequest {
     private Boolean autoSelectFromFavorite;
 
     @NotBlank(message="Specify if an employee should be automatically selected from your favorites.")
-    private int autoPostThisForTheNextNthWeeks;
+    private Integer autoPostThisForTheNextNthWeeks;
 }

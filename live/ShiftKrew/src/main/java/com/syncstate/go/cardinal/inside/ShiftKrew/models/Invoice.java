@@ -4,6 +4,8 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.models;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.syncstate.go.cardinal.inside.ShiftKrew.deserializers.TimestampDeserializer;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.CasualJobStatus;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.InvoiceStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.serializers.JsonDateTimeSerializer;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -69,7 +71,14 @@ public class Invoice implements Serializable {
     private Double totalOtherAmount;
 
     @Column(name = "payToBankAccountId", nullable = false)
-    private String payToBankAccountId;
+    private Long payToBankAccountId;
+
+    @Column(name = "isCredit", nullable = true)
+    private Boolean isCredit;
+
+    @Column(name = "invoiceStatus", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private InvoiceStatus invoiceStatus;
 
 
 

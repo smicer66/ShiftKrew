@@ -1,20 +1,20 @@
 package com.syncstate.go.cardinal.inside.ShiftKrew.enums;
 
-public enum UserRole {
+public enum Role {
     SYSTEM("SYSTEM"),
-    PRIVATE_CUSTOMER("PRIVATE_CUSTOMER"),
-    ORGANISATION_CUSTOMER("ORGANISATION_CUSTOMER");
+    EMPLOYEE("Employee"),
+    EMPLOYER("Employer");
 
 
 
     public final String value;
 
-    private UserRole(String value) {
+    private Role(String value) {
         this.value = value;
     }
 
-    public UserRole valueOfLabel(String label) {
-        for (UserRole e : values()) {
+    public Role valueOfLabel(String label) {
+        for (Role e : values()) {
             if (e.value.equals(label)) {
                 return e;
             }
