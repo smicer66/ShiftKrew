@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 public interface CasualJobScheduleRepository extends JpaRepository<CasualJobSchedule, Long>{
 
-    @Query("SELECT u FROM CasualJobSchedule u WHERE u.casualJobId = :casualJobId")
+    @Query("SELECT u FROM CasualJobSchedule u WHERE u.jobId = :casualJobId")
     Collection<CasualJobSchedule> getCasualJobScheduleByCasualJobId(Long casualJobId);
 
     @Query("SELECT u FROM CasualJobSchedule u WHERE u.casualJobScheduleId IN :casualJobScheduleIdList")
