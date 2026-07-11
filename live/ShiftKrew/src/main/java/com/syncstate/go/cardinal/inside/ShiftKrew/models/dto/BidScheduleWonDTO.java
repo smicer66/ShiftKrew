@@ -19,5 +19,5 @@ public class BidScheduleWonDTO {
 
 
     @Size(min=1, message="Specify the winning bid for each job selected")
-    private List<Long> BidIdList;
+    private List<Long> bidIdList;
 }

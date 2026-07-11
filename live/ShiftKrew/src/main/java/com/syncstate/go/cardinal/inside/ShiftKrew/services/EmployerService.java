@@ -49,6 +49,7 @@ public class EmployerService {
     @Autowired
     private InvoiceItemRepository invoiceItemRepository;
 
+
     @Value("${holiday.pay.percentage}")
     private double holidayPayPercent;
 
@@ -65,11 +66,11 @@ public class EmployerService {
     private Long payToBankAccountId;
 
     DecimalFormat f = new DecimalFormat("##.00");
-    DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy MM dd");
+    DateTimeFormatter df = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
     public AutoGraphResponse addEmployerToUserAccount(User user, AddEmployerRequest addEmployerRequest) {
 
-
+        System.out.println(11);
         UserEmployer userEmployer = this.userEmployerRepository.getUserEmployerByUserIdAndEmployerName(user.getUserId(),
                 addEmployerRequest.getEmployerName());
 
@@ -127,6 +128,9 @@ public class EmployerService {
         casualJob.setCasualJobStatus(CasualJobStatus.OPEN);
         casualJob.setSubmittedByUserEmployerId(userEmployer.getUserEmployerId());
         casualJob.setSubmittedByUserId(userEmployer.getUserId());
+        casualJob.setDressCode(postAJobRequest.getDressCode());
+        casualJob.setContactPerson(postAJobRequest.getContactPerson());
+        casualJob.setAutoSelectFromFavorite(postAJobRequest.getAutoSelectFromFavorite()==null ? false : postAJobRequest.getAutoSelectFromFavorite());
         CasualJob casualJobCreated = (CasualJob) casualJobRepository.save(casualJob);
 
         if(postAJobRequest.getAutoSelectFromFavorite().equals(Boolean.TRUE))
@@ -259,6 +263,11 @@ public class EmployerService {
 
             CasualJobDTO casualJobDTO = new CasualJobDTO();
             BeanUtils.copyProperties(casualJob, casualJobDTO);
+            casualJobDTO.setEmployerJoinDate(df.format(userEmployer.getCreatedAt().toLocalDate()));
+            casualJobDTO.setPostByEmployer(userEmployer.getEmployerName());
+            casualJobDTO.setContactPerson(postAJobRequest.getContactPerson());
+            casualJobDTO.setSkillRequired(postAJobRequest.getSkillName());
+
 
             List<CasualJobScheduleDTO> casualJobScheduleDTOList =  casualJobScheduleList.stream().map(cjs -> {
                 CasualJobScheduleDTO casualJobScheduleDTO = new CasualJobScheduleDTO();
@@ -456,7 +465,16 @@ public class EmployerService {
         Optional<CasualJobSchedule> casualJobScheduleOpt = casualJobScheduleCollection.stream().filter(t -> t.getScheduleStartDate().getDayOfYear() ==
                 LocalDate.now().getDayOfYear()
         ).findFirst();
+        if(casualJobScheduleOpt.isEmpty())
+        {
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your casual job has been cancelled without any charge to your organization.");
+            return autoGraphResponse;
+        }
         CasualJobSchedule casualJobSchedule = casualJobScheduleOpt.get();
+
+
 
         Invoice oldInvoice = (Invoice) this.invoiceRepository.
                 getInvoiceByCasualJobIdAndStatus(casualJob.getCasualJobId(),
@@ -501,6 +519,25 @@ public class EmployerService {
         AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
         autoGraphResponse.setStatus(0);
         autoGraphResponse.setStatusMessage("Your casual job has been cancelled.");
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse addBusinessToUser(User user, AddBusinessToUserRequest addBusinessToUserRequest) throws AppException {
+        if(user.getUserRole()!= Role.EMPLOYER)
+        {
+            throw new AppException("You are currently logged in as an Employee. Please log in as an Employer.");
+        }
+
+        UserEmployer userEmployer = new UserEmployer();
+        BeanUtils.copyProperties(addBusinessToUserRequest, userEmployer);
+        userEmployer.setUserId(user.getUserId());
+
+        this.userEmployerRepository.save(userEmployer);
+
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Your business has been mapped to your ShiftKrew account successfully.");
         return autoGraphResponse;
     }
 }

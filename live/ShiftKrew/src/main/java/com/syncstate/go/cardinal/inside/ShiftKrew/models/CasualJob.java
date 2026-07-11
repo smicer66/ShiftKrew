@@ -38,6 +38,9 @@ public class CasualJob implements Serializable {
     @Column(name = "jobAddressPostCode", nullable = false)
     private String jobAddressPostCode;
 
+    @Column(name = "contactPerson", nullable = true)
+    private String contactPerson;
+
     @Column(name = "autoSelectFromFavorite", nullable = false)
     private Boolean autoSelectFromFavorite;
 

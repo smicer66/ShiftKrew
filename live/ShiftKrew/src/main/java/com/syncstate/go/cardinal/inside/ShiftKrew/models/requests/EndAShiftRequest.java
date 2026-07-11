@@ -20,9 +20,6 @@ public class EndAShiftRequest {
     @NotBlank(message="Specify the employer posting this job.")
     private Long casualJobScheduleId;
 
-    @NotBlank(message="Provide a reason for canceling this job.")
-    private LocalDateTime localDateTime;
-
     private Integer shiftRating;
 
     private String feedbackDetails;

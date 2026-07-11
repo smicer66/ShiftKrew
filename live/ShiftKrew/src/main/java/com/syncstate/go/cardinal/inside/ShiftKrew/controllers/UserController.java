@@ -7,6 +7,7 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.models.User;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.*;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.services.AuthService;
+import com.syncstate.go.cardinal.inside.ShiftKrew.services.EmployerService;
 import com.syncstate.go.cardinal.inside.ShiftKrew.services.TokenService;
 import com.syncstate.go.cardinal.inside.ShiftKrew.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EmployerService employerService;
 
     @Autowired
     private AuthService authService;
@@ -71,8 +75,8 @@ public class UserController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
-    @RequestMapping(value="/update-user-technical-training", method = RequestMethod.POST)
-    public ResponseEntity<AutoGraphResponse> updateUserTechnicalTraining(@RequestBody AddUserTechnicalTrainingRequest addUserTechnicalTrainingRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    @RequestMapping(value="/add-user-technical-training", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> addUserTechnicalTraining(@RequestBody AddUserTechnicalTrainingRequest addUserTechnicalTrainingRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {
         String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
         User user = tokenService.getUserFromToken(request);
@@ -82,12 +86,12 @@ public class UserController {
     }
 
 
-    @RequestMapping(value="/login", method = RequestMethod.POST)
-    public ResponseEntity<AutoGraphResponse> loginCustomer(@RequestBody LoginRequest loginRequest)
-    {
-        ResponseEntity autoGraphResponse = authService.doLogin(loginRequest);
-        return autoGraphResponse;
-    }
+//    @RequestMapping(value="/login", method = RequestMethod.POST)
+//    public ResponseEntity<AutoGraphResponse> loginCustomer(@RequestBody LoginRequest loginRequest)
+//    {
+//        ResponseEntity autoGraphResponse = authService.doLogin(loginRequest);
+//        return autoGraphResponse;
+//    }
 
 
     @RequestMapping(value="/get-user-data")
@@ -95,6 +99,19 @@ public class UserController {
         String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
         User user = tokenService.getUserFromToken(request);
         AutoGraphResponse autoGraphResponse = userService.getUserData(user);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
+
+
+    @RequestMapping(value="/add-business-to-user", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> addBusinessToUser(@RequestBody AddBusinessToUserRequest addBusinessToUserRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.addBusinessToUser(user, addBusinessToUserRequest);
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 }

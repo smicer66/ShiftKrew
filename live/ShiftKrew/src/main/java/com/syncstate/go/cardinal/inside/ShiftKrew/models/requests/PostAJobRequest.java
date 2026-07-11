@@ -31,6 +31,9 @@ public class PostAJobRequest {
     @NotBlank(message="Provide the description of the casual job.")
     private String jobDetails;
 
+    @NotBlank(message="Provide the contact person who can be contacted during/ahead of the shift.")
+    private String contactPerson;
+
     @NotBlank(message="Provide the dress code for this casual job.")
     private String dressCode;
 

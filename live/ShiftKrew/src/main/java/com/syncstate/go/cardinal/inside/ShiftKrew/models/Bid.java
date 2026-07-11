@@ -26,10 +26,11 @@ public class Bid implements Serializable {
     @Column(name = "bidDetails", nullable = false)
     private String bidDetails;
 
-    @Column(name = "bidAmount", nullable = false)
-    private Double bidAmount;
+    @Column(name = "bidAmountPerHour", nullable = false)
+    private Double bidAmountPerHour;
 
-    @Column(name = "bidStatus", nullable = false)
+    @Column(name = "bidStatus", nullable = true)
+    @Enumerated(EnumType.STRING)
     private BidStatus bidStatus;
 
     @Column(name = "bidSubmittedByUserId", nullable = false)

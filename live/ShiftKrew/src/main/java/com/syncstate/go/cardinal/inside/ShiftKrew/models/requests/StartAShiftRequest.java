@@ -20,9 +20,6 @@ public class StartAShiftRequest {
     @NotBlank(message="Specify the employer posting this job.")
     private Long casualJobScheduleId;
 
-    @NotBlank(message="Provide a reason for canceling this job.")
-    private LocalDateTime localDateTime;
-
     private Double longitude;
 
     private Double latitude;

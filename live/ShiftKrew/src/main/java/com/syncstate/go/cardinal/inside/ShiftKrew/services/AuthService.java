@@ -1,6 +1,7 @@
 package com.syncstate.go.cardinal.inside.ShiftKrew.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.User;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.LoginRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AuthResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.providers.TokenProvider;
@@ -28,6 +29,7 @@ public class AuthService {
 
     public ResponseEntity<AuthResponse> doLogin(LoginRequest loginRequest) {
         try {
+            //System.out.println(authenticationManager.);
             final Authentication authentication = authenticationManager.authenticate(
                     //                new AuthenticationManagerCustom(loginUser.getEmailAddress(), loginUser.getPassword())
                     //                new PayAccessAuthenticationProvider()
@@ -37,10 +39,14 @@ public class AuthService {
                         loginRequest.getPassword()
                     )
             );
+            System.out.println(2);
+            System.out.println(((User)authentication.getPrincipal()).getUserRole());
+
 
             logger.info("{}", authentication.isAuthenticated());
             logger.info("{}", authentication.getPrincipal());
             //        logger.info("{}>>>>", loginUser.getEmailAddress());
+
 
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -58,6 +64,7 @@ public class AuthService {
         }
         catch(ProviderNotFoundException | JsonProcessingException e)
         {
+            System.out.println(77);
             AuthResponse loginResponse = new AuthResponse();
             loginResponse.setToken(null);
             loginResponse.setValid(true);//.setUsername(loginRequest.getUsername());

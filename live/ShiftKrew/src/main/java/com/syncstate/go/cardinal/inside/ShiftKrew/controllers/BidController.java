@@ -39,8 +39,8 @@ public class BidController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
-    @RequestMapping(value="/cancel-bid", method = RequestMethod.GET)
-    public ResponseEntity<AutoGraphResponse> cancelBid(@RequestParam Long bidId) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    @RequestMapping(value="/cancel-bid/{bidId}", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> cancelBid(@PathVariable Long bidId) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {
         String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
         User user = tokenService.getUserFromToken(request);
@@ -51,7 +51,7 @@ public class BidController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
-    @RequestMapping(value="/select-winning-bid", method = RequestMethod.GET)
+    @RequestMapping(value="/select-winning-bid", method = RequestMethod.POST)
     public ResponseEntity<AutoGraphResponse> selectWinningBid(@RequestBody SelectWinningBidRequest selectWinningBidRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {
         String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());

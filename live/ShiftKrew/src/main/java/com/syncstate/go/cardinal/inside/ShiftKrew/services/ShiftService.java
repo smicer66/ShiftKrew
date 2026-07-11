@@ -1,6 +1,7 @@
 package com.syncstate.go.cardinal.inside.ShiftKrew.services;
 
 
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.CasualJobStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.Role;
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.ShiftStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
@@ -29,12 +30,40 @@ public class ShiftService {
         Shift shift = this.shiftRepository.getShiftByScheduleIdShiftIdAndJobId(cancelAShiftRequest.getCasualJobScheduleId(),
                 cancelAShiftRequest.getShiftId(), cancelAShiftRequest.getCasualJobId());
         CasualJob casualJob = this.casualJobRepository.getById(shift.getCasualJobId());
-        if(user.getUserRole().equals(Role.EMPLOYER) && casualJob.getSubmittedByUserId().equals(user.getUserId()))
+
+
+        if(Arrays.asList(
+                new String[]{ShiftStatus.CANCELLED.name(),
+                        ShiftStatus.EMPLOYEE_ENDED_SHIFT.name(),
+                        ShiftStatus.EMPLOYER_ENDED_SHIFT.name()}
+        ).contains(shift.getShiftStatus().name()) &&
+                user.getUserRole().equals(Role.EMPLOYEE) &&
+                shift.getEmployeeUserId().equals(user.getUserId()))
+        {
+            throw new AppException("This shift can not be canceled because the shift has been specified to have ended.");
+        }
+
+        if(Arrays.asList(
+                new String[]{ShiftStatus.CANCELLED.name(),
+                        ShiftStatus.EMPLOYER_ENDED_SHIFT.name()}
+        ).contains(shift.getShiftStatus().name()) &&
+                user.getUserRole().equals(Role.EMPLOYER) &&
+                shift.getEmployeeUserId().equals(user.getUserId()))
+        {
+            throw new AppException("This shift can not be canceled because the shift has been specified to have ended.");
+        }
+
+        if(user.getUserRole().equals(Role.EMPLOYER) &&
+                !shift.getShiftStatus().equals(ShiftStatus.CANCELLED) &&
+                casualJob.getSubmittedByUserId().equals(user.getUserId()))
         {
             shift.setShiftStatus(ShiftStatus.CANCELLED);
             shift.setReasonForCancellation(cancelAShiftRequest.getShiftCancellationReason());
             shift.setCancelledByUserId(user.getUserId());
             this.shiftRepository.save(shift);
+
+            casualJob.setCasualJobStatus(CasualJobStatus.CANCELLED);
+            this.casualJobRepository.save(casualJob);
 
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
             autoGraphResponse.setStatus(0);
@@ -42,12 +71,17 @@ public class ShiftService {
 
             return autoGraphResponse;
         }
-        else if(user.getUserRole().equals(Role.EMPLOYEE) && shift.getEmployeeUserId().equals(user.getUserId()))
+        else if(user.getUserRole().equals(Role.EMPLOYEE) &&
+                !shift.getShiftStatus().equals(ShiftStatus.CANCELLED) &&
+                shift.getEmployeeUserId().equals(user.getUserId()))
         {
             shift.setShiftStatus(ShiftStatus.CANCELLED);
             shift.setReasonForCancellation(cancelAShiftRequest.getShiftCancellationReason());
             shift.setCancelledByUserId(user.getUserId());
             this.shiftRepository.save(shift);
+
+            casualJob.setCasualJobStatus(CasualJobStatus.CANCELLED);
+            this.casualJobRepository.save(casualJob);
 
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
             autoGraphResponse.setStatus(0);
@@ -199,9 +233,11 @@ public class ShiftService {
                         shift.getEmployeeUserId().equals(user.getUserId()))
         {
             shift.setShiftStatus(ShiftStatus.EMPLOYEE_ENDED_SHIFT);
-            shift.setEmployeeSignedInAt(LocalDateTime.now());
+            shift.setEmployeeSignedOffAt(LocalDateTime.now());
             shift.setEmployeeLongitudeOnShiftEnd(endAShiftRequest.getLongitude());
             shift.setEmployeeLatitudeOnShiftEnd(endAShiftRequest.getLatitude());
+            shift.setFeedbackAboutEmployer(endAShiftRequest.getFeedbackDetails());
+            shift.setRatingByEmployee(endAShiftRequest.getShiftRating());
             this.shiftRepository.save(shift);
 
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();

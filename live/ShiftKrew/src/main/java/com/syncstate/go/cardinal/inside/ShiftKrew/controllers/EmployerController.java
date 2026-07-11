@@ -29,15 +29,7 @@ public class EmployerController {
     @Autowired
     private EmployerService employerService;
 
-    @RequestMapping(value="/add-employer-to-user-account", method = RequestMethod.POST)
-    public ResponseEntity<AutoGraphResponse> addEmployerToUserAccount(@RequestBody AddEmployerRequest addUserSkillSetRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
-    {
-        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
-        User user = tokenService.getUserFromToken(request);
 
-        AutoGraphResponse autoGraphResponse = employerService.addEmployerToUserAccount(user, addUserSkillSetRequest);
-        return ResponseEntity.ok().body(autoGraphResponse);
-    }
 
     @RequestMapping(value="/post-a-casual-job", method = RequestMethod.POST)
     public ResponseEntity<AutoGraphResponse> postACasualJob(@RequestBody PostAJobRequest postAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,

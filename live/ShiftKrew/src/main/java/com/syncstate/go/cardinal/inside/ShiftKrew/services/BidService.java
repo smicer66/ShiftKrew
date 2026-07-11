@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BidService {
@@ -59,21 +60,45 @@ public class BidService {
 
         if(casualJob!=null && casualJob.getCasualJobStatus().equals(CasualJobStatus.OPEN))
         {
+
+            Collection<CasualJobSchedule> casualJobSchedules =
+                this.casualJobScheduleRepository.getCasualJobScheduleByCasualJobScheduleId(
+                        postABidRequest.getBidScheduleIdList()
+                );
+            List<Long> casualJobScheduleIds = casualJobSchedules.stream().
+                    map(cjs -> cjs.getCasualJobScheduleId()).
+                    collect(Collectors.toList());
+
             if(bid==null)
             {
                 bid = new Bid();
             }
-            bid.setBidAmount(postABidRequest.getBidAmount());
+            else
+            {
+                Collection<CasualJobScheduleBid> casualJobScheduleBids = this.casualJobScheduleBidRepository
+                        .getCasualJobScheduleBidByScheduleIdAndBidId(
+                                bid.getBidId(),
+                                casualJobScheduleIds
+
+                );
+                casualJobScheduleBids.stream().map(cjs -> {
+                    this.casualJobScheduleBidRepository.delete(cjs);
+                    return null;
+                }).collect(Collectors.toList());
+            }
+            bid.setBidAmountPerHour(postABidRequest.getBidAmountPerHour());
             bid.setBidDetails(postABidRequest.getBidDetails());
             bid.setBidStatus(BidStatus.ACTIVE);
             bid.setCasualJobId(casualJob.getCasualJobId());
             bid.setBidSubmittedByUserId(user.getUserId());
             Bid bidCreated = (Bid) this.bidRepository.save(bid);
 
-            Collection<CasualJobSchedule> casualJobSchedules =
-                    this.casualJobScheduleRepository.getCasualJobScheduleByCasualJobScheduleId(
-                            postABidRequest.getBidScheduleIdList()
-                    );
+
+
+
+
+
+            System.out.println(casualJobSchedules.size());
             casualJobSchedules.stream().map(bs -> {
                 CasualJobScheduleBid casualJobScheduleBid = new CasualJobScheduleBid();
                 casualJobScheduleBid.setBidOwnerId(bidCreated.getBidSubmittedByUserId());
@@ -83,7 +108,7 @@ public class BidService {
                 casualJobScheduleBid = (CasualJobScheduleBid)this.casualJobScheduleBidRepository.save(casualJobScheduleBid);
 
                 return casualJobScheduleBid;
-            });
+            }).collect(Collectors.toList());
 
 
             BidDTO bidDTO = new BidDTO();
@@ -141,7 +166,9 @@ public class BidService {
         }
 
 
+        System.out.println(selectWinningBidRequest.getBidScheduleWonDTOList().size());
         int totalBidScheduleWon = selectWinningBidRequest.getBidScheduleWonDTOList().stream().mapToInt(bsw -> {
+
             Collection<Bid> bidList = this.bidRepository.getBidByBidIdsAndCasualJobId(bsw.getBidIdList(), casualJob.getCasualJobId());
             int totalBids = 0;
             if(bidList!=null && bidList.size()==bsw.getBidIdList().size())
@@ -150,8 +177,10 @@ public class BidService {
                 totalBids = bidList.stream().mapToInt(bl -> {
                     ArrayList newList = new ArrayList();
                     newList.add(casualJobSchedule.getCasualJobScheduleId());
+                    System.out.println(newList);;
                     List<CasualJobScheduleBid> casualJobScheduleBidList = this.casualJobScheduleBidRepository.
-                            getCasualJobScheduleBidByScheduleIdAndBidId(newList, bl.getBidId());
+                            getCasualJobScheduleBidByScheduleIdAndBidId(bl.getBidId(), newList);
+                    System.out.println(casualJobScheduleBidList.size());;
                     CasualJobScheduleBid casualJobScheduleBid = casualJobScheduleBidList.get(0);
                     casualJobScheduleBid.setIsWon(true);
                     this.casualJobScheduleBidRepository.save(casualJobScheduleBid);
@@ -185,7 +214,7 @@ public class BidService {
 
             AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
             autoGraphResponse.setStatus(0);
-            autoGraphResponse.setStatusMessage("Your selected bids have been assigned to the job");
+            autoGraphResponse.setStatusMessage("Your selected bidder(s) have been assigned to the job");
 
             return autoGraphResponse;
         }

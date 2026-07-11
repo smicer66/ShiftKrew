@@ -23,7 +23,7 @@ public class PostABidRequest {
     private String bidDetails;
 
     @NotBlank(message="Specify how much you want to be paid per hour.")
-    private Double bidAmount;
+    private Double bidAmountPerHour;
 
     @NotBlank(message="Specify the latest date you want to be notified of being assigned the job.")
     private LocalDateTime bidResponseDeadline;

@@ -91,13 +91,15 @@ public class TokenProvider implements Serializable {
         Map<String, Object> claims = new HashMap<>();
         claims.put(roleKey, userDetails.getAuthorities());
         userDetails.getAuthorities().stream().map(t -> {
-            System.out.println(t);
+            System.out.println(".................");
+            System.out.println(t.getAuthority());
             return  null;
         });
 //        claims.put("username", ((User)(userDetails.getPrincipal())).getEmailAddress());
         System.out.println(">>>>>>>>>>>>>>>>>>>>");
         System.out.println(userDetails.getPrincipal());
         claims.put("user", userDetails.getPrincipal());
+        claims.put("userRole", ((User)(userDetails.getPrincipal())).getUserRole().name());
         return doGenerateToken(claims, ((User)(userDetails.getPrincipal())).getUsername());
     }
 

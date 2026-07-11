@@ -16,5 +16,5 @@ public interface CasualJobScheduleBidRepository extends JpaRepository<CasualJobS
 
     @Query("SELECT u FROM CasualJobScheduleBid u WHERE u.bidId = :bidId " +
             "AND u.jobScheduleId IN :newList")
-    List<CasualJobScheduleBid> getCasualJobScheduleBidByScheduleIdAndBidId(ArrayList newList, Long bidId);
+    List<CasualJobScheduleBid> getCasualJobScheduleBidByScheduleIdAndBidId(Long bidId, List newList);
 }

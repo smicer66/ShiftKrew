@@ -77,54 +77,63 @@ public AuthenticationManager authManager(HttpSecurity http) throws Exception {
     @Bean
     protected SecurityFilterChain configure(HttpSecurity http) throws Exception
     {
-        return http
-                .sessionManagement(sm -> {
-                    sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+            return http
+                    .sessionManagement(sm -> {
+                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-                })
+                    })
 
 //                .apply(new JwtConfigurer(tokenProvider, userService))
-                .csrf(cs -> {
-                    try {
-                        cs.disable().apply(new JwtConfigurer(tokenProvider, userService));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
+                    .csrf(cs -> {
+                        try {
+                            cs.disable().apply(new JwtConfigurer(tokenProvider, userService));
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
 
-                .cors(crs -> {
-                    try {
-                        crs.disable().apply(new JwtConfigurer(tokenProvider, userService));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .authorizeHttpRequests(auth-> {
-                    auth.requestMatchers("/api/v1/services/user/login").permitAll(); //"/api/v1/acquirers/create-user",
+                    .cors(crs -> {
+                        try {
+                            crs.disable().apply(new JwtConfigurer(tokenProvider, userService));
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .authorizeHttpRequests(auth -> {
+                        auth.requestMatchers("/api/v1/services/auth/login").permitAll(); //"/api/v1/acquirers/create-user",
                     //auth.requestMatchers( "/api/v1/banking/funds-transfer").access();
                     auth.requestMatchers("/test/**").permitAll();
                     auth.requestMatchers("/api/v1/services/user/create-new-user-account").permitAll();
                     auth.requestMatchers("/api/v1/services/user/add-user-skillset").permitAll();
                     auth.requestMatchers("/api/v1/services/user/add-user-work-experience").permitAll();
+                    auth.requestMatchers("/api/v1/services/user/add-user-technical-training").permitAll();
                     auth.requestMatchers("/api/v1/user/validate-token").permitAll();
-                    auth.requestMatchers("/api/v1/user/login").permitAll();
+                    //auth.requestMatchers("/api/v1/user/login").permitAll();
                     auth.requestMatchers("/api/v1/services/user/get-user-data").permitAll();
                     auth.requestMatchers("/api/v1/services/employer/post-a-casual-job").permitAll();
                     auth.requestMatchers("/api/v1/services/employer/preview-invoice").permitAll();
-
+                    auth.requestMatchers("/api/v1/services/employer/cancel-a-casual-job").permitAll();
+                    auth.requestMatchers("/api/v1/services/user/add-business-to-user").permitAll();
                     auth.requestMatchers("/api/v1/services/bid/post-a-bid").permitAll();
-                    auth.requestMatchers("/api/v1/services/bid/cancel-bid").permitAll();
+                    auth.requestMatchers("/api/v1/services/bid/cancel-bid/**").permitAll();
                     auth.requestMatchers("/api/v1/services/bid/select-winning-bid").permitAll();
+                    auth.requestMatchers("/api/v1/services/shifts/start-a-shift").permitAll();
+                    auth.requestMatchers("/api/v1/services/shifts/end-a-shift").permitAll();
+                    auth.requestMatchers("/api/v1/services/shifts/cancel-a-shift").permitAll();
 
 
 
-                    auth.anyRequest().authenticated();
 
 
-                })
 
-                .authenticationProvider(authProvider)
-                .build();
+                    //auth.anyRequest().authenticated();
+
+
+                    })
+
+                    .authenticationProvider(authProvider)
+                    .build();
+
 
     }
 

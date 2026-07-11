@@ -33,7 +33,9 @@ public class SmartBankingAuthenticationProvider implements AuthenticationProvide
 
     public SmartBankingAuthenticationProvider() {
         super();
+        System.out.println(1);
     }
+
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
@@ -56,6 +58,7 @@ public class SmartBankingAuthenticationProvider implements AuthenticationProvide
     @Override
     public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
 
+        System.out.println(1);
 //        JavaTimeModule javaTimeModule = new JavaTimeModule();
 //        javaTimeModule.addDeserializer(LocalDateTime.class, new TimestampDeserializer());
         ObjectMapper objectMapper = new ObjectMapper()
@@ -95,6 +98,7 @@ public class SmartBankingAuthenticationProvider implements AuthenticationProvide
         String jwe = jweAuth.getToken();
 
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        System.out.println(us.getUserRole().name());
         authorities.add(new SimpleGrantedAuthority("ROLE_" + us.getUserRole().name()));
         UsernamePasswordAuthenticationToken r = new UsernamePasswordAuthenticationToken(us, password, authorities); // (4)
         System.out.println("r subject..." + r.getPrincipal());
