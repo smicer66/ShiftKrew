@@ -83,6 +83,18 @@ public class EmployerController {
     }
 
 
+    @RequestMapping(value="/get-casual-jobs", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> getCasualJobs(@RequestParam Integer pageNo) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+
+        AutoGraphResponse autoGraphResponse = employerService.getCasualJobs(user, pageNo);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
     @RequestMapping(value="/create-new-team", method = RequestMethod.POST)
     public ResponseEntity<AutoGraphResponse> createNewTeam(@RequestBody CreateNewTeamRequest createNewTeamRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {

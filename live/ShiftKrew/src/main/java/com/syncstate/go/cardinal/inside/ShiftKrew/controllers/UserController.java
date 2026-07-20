@@ -116,5 +116,16 @@ public class UserController {
     }
 
 
+    @RequestMapping(value="/generate-referral/{count}", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> generateReferral(@PathVariable Integer count) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = userService.generateReferral(user, count);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
 
 }

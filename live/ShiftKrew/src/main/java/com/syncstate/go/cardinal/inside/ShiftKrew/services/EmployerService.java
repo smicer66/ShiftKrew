@@ -858,4 +858,17 @@ public class EmployerService {
         }
         throw new AppException("Employer team mismatch. We can not handle this request at the moment.");
     }
+
+    public AutoGraphResponse getCasualJobs(User user, Integer pageNo) {
+        int start = pageNo==null ? 0*10 : pageNo*10;
+        int end = start + 10;
+
+        List<CasualJob> casualJobs = this.casualJobRepository.findAll().subList(start, end);
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("A list of casual jons.");
+        autoGraphResponse.setResponseData(casualJobs);
+
+        return autoGraphResponse;
+    }
 }

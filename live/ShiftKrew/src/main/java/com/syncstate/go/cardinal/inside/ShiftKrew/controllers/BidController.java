@@ -7,6 +7,7 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.models.User;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddEmployerRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.PostABidRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.SelectWinningBidRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.UpdateABidRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.services.BidService;
 import com.syncstate.go.cardinal.inside.ShiftKrew.services.TokenService;
@@ -75,4 +76,13 @@ public class BidController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
+    @RequestMapping(value="/update-a-bid", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> updateABid(@RequestBody UpdateABidRequest updateABidRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = bidService.updateABid(user, updateABidRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
 }

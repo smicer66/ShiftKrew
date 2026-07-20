@@ -15,6 +15,7 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserSkillRe
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserWorkExperienceRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,9 @@ public class UserService {
 
     @Autowired
     UserReferralRepository userReferralRepository;
+
+    @Autowired
+    ReferralRepository referralRepository;
 
     @Autowired
     UserSkillRepository userSkillSetRepository;
@@ -97,11 +101,14 @@ public class UserService {
 
         if(createNewUserAccountRequest.getReferralCode()!=null)
         {
-            UserReferral userReferral = new UserReferral();
-            userReferral.setUserId(user.getUserId());
-            userReferral.setReferralCode(createNewUserAccountRequest.getReferralCode());
-            userReferral.setIsValid(true);
-            userReferral = (UserReferral) userReferralRepository.save(userReferral);
+            Referral referral = this.referralRepository.getReferralByReferralCode(user.getUserId(), createNewUserAccountRequest.getReferralCode());
+            if(referral!=null) {
+                UserReferral userReferral = new UserReferral();
+                userReferral.setUserId(user.getUserId());
+                userReferral.setReferralCode(createNewUserAccountRequest.getReferralCode());
+                userReferral.setIsValid(true);
+                userReferral = (UserReferral) userReferralRepository.save(userReferral);
+            }
         }
 
         UserDTO userDTO = new UserDTO();
@@ -253,6 +260,23 @@ public class UserService {
         autoGraphResponse.setResponseData(null);
 
         return ResponseEntity.ok(autoGraphResponse);
+    }
+
+    public AutoGraphResponse generateReferral(User user, Integer count) {
+        count= Math.abs(count);
+        for(int i=0; i<count; i++)
+        {
+            Referral referral = new Referral();
+            referral.setReferralCode(RandomStringUtils.randomAlphanumeric(8));
+            referral.setCreatedByUserId(user.getUserId());
+            this.referralRepository.save(referral);
+        }
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Referral codes have been generated for you.");
+        autoGraphResponse.setResponseData(null);
+
+        return autoGraphResponse;
     }
 
 //    public AutoGraphResponse loginCustomer(LoginRequest loginRequest) {
