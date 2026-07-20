@@ -81,4 +81,48 @@ public class EmployerController {
         AutoGraphResponse autoGraphResponse = employerService.getACasualJob(user, casualJobId);
         return ResponseEntity.ok().body(autoGraphResponse);
     }
+
+
+    @RequestMapping(value="/create-new-team", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> createNewTeam(@RequestBody CreateNewTeamRequest createNewTeamRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.createNewTeam(user, createNewTeamRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
+    @RequestMapping(value="/add-member-to-team", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> addMemberToTeam(@RequestBody AddNewTeamMemberRequest addNewTeamMemberRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.addMemberToTeam(user, addNewTeamMemberRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
+    @RequestMapping(value="/remove-team-member", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> removeTeamMember(@RequestBody RemoveTeamMemberRequest removeTeamMemberRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.removeTeamMember(user, removeTeamMemberRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
+    @RequestMapping(value="/remove-team/{teamId}", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> removeTeam(@PathVariable Long teamId) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.removeTeam(user, teamId);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
 }

@@ -36,6 +36,12 @@ public class EmployerService {
     UserEmployerRepository userEmployerRepository;
 
     @Autowired
+    EmployerTeamRepository employerTeamRepository;
+
+    @Autowired
+    EmployerTeamMemberRepository employerTeamMemberRepository;
+
+    @Autowired
     CasualJobRepository casualJobRepository;
 
     @Autowired
@@ -785,5 +791,71 @@ public class EmployerService {
         autoGraphResponse.setResponseData(hMap);
 
         return autoGraphResponse;
+    }
+
+    public AutoGraphResponse createNewTeam(User user, CreateNewTeamRequest createNewTeamRequest) throws AppException {
+        EmployerTeam employerTeam = this.employerTeamRepository.getEmployerTeamByTeamName(createNewTeamRequest.getTeamName(), user.getUserId());
+        if(employerTeam!=null)
+        {
+            throw new AppException("You already have a team with a similar team name");
+        }
+
+        employerTeam = new EmployerTeam();
+        employerTeam.setTeamName(createNewTeamRequest.getTeamName());
+        employerTeam.setCreatedByUserId(user.getUserId());
+        EmployerTeam employerTeamCreated = (EmployerTeam) this.employerTeamRepository.save(employerTeam);
+        createNewTeamRequest.getUserIdList().stream().map(u -> {
+            EmployerTeamMember employerTeamMember = new EmployerTeamMember();
+            employerTeamMember.setEmployerTeamId(employerTeamCreated.getEmployerTeamId());
+            employerTeamMember.setEmployeeUserId(u);
+            employerTeamMember = (EmployerTeamMember)this.employerTeamMemberRepository.save(employerTeamMember);
+            return employerTeamMember;
+        }).collect(Collectors.toList());
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("A new team has been created");
+        autoGraphResponse.setResponseData(employerTeamCreated);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse addMemberToTeam(User user, AddNewTeamMemberRequest addNewTeamMemberRequest) {
+        List<EmployerTeamMember> teamMembersAdded = addNewTeamMemberRequest.getUserIdList().stream().map(u -> {
+            EmployerTeamMember employerTeamMember = new EmployerTeamMember();
+            employerTeamMember.setEmployerTeamId(addNewTeamMemberRequest.getTeamId());
+            employerTeamMember.setEmployeeUserId(u);
+            employerTeamMember = (EmployerTeamMember)this.employerTeamMemberRepository.save(employerTeamMember);
+            return employerTeamMember;
+        }).collect(Collectors.toList());
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("A new team member has been added.");
+        autoGraphResponse.setResponseData(teamMembersAdded);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse removeTeamMember(User user, RemoveTeamMemberRequest removeTeamMemberRequest) throws AppException {
+        EmployerTeam employerTeam = this.employerTeamRepository.getById(removeTeamMemberRequest.getTeamId());
+        EmployerTeamMember employerTeamMember = this.employerTeamMemberRepository.getById(removeTeamMemberRequest.getUserId());
+
+        if(employerTeam!=null && employerTeamMember!=null &&
+                employerTeamMember.getEmployerTeamId().equals(employerTeam.getEmployerTeamId()))
+        {
+            this.employerTeamMemberRepository.delete(employerTeamMember);
+        }
+
+        throw new AppException("Employer team member mismatch. We can not handle this request at the moment.");
+    }
+
+    public AutoGraphResponse removeTeam(User user, Long teamId) throws AppException {
+        EmployerTeam employerTeam = this.employerTeamRepository.getById(teamId);
+        if(employerTeam!=null && employerTeam.getCreatedByUserId().equals(user.getUserId()))
+        {
+            this.employerTeamRepository.delete(employerTeam);
+        }
+        throw new AppException("Employer team mismatch. We can not handle this request at the moment.");
     }
 }
