@@ -221,4 +221,14 @@ public class BidService {
 
         throw new AppException("We could not specify the selected bid(s) as the winning bids.");
     }
+
+    public AutoGraphResponse viewBidByJobId(User user, Long jobId) {
+        Collection<Bid> bidList = this.bidRepository.getBidByCasualJobId(jobId);
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("List of bids for the selected casual job.");
+        autoGraphResponse.setResponseData(bidList);
+
+        return autoGraphResponse;
+    }
 }

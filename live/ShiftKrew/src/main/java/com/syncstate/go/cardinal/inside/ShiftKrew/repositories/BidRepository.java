@@ -19,4 +19,10 @@ public interface BidRepository extends JpaRepository<Bid, Long>{
 
     @Query("SELECT u from Bid u WHERE u.casualJobId = :casualJobId AND u.bidId IN :bidIdList")
     Collection<Bid> getBidByBidIdsAndCasualJobId(List<Long> bidIdList, Long casualJobId);
+
+    @Query("SELECT new com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.BidDTO" +
+            "(b.id, b.bidDetails, b.bidAmount, b.bidStatus, u.firstName + ' ' + u.lastName) from Bid b" +
+            " INNER JOIN User u on u.userId = b.bidSubmittedByUserId" +
+            " WHERE u.casualJobId = :casualJobId")
+    Collection<Bid> getBidByCasualJobId(Long casualJobId);
 }

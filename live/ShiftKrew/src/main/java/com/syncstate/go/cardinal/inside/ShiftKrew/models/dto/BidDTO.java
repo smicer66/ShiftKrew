@@ -26,4 +26,19 @@ public class BidDTO {
 
     private BidStatus bidStatus;
 
+    private String bidSubmittedByUser;
+
+
+    public BidDTO()
+    {
+
+    }
+
+    public BidDTO(Long bidId, String bidDetails, Double bidAmount, BidStatus bidStatus, String bidSubmittedByUser) {
+        this.bidId = bidId;
+        this.bidDetails = bidDetails;
+        this.bidAmount = bidAmount;
+        this.bidStatus = bidStatus;
+        this.bidSubmittedByUser = bidSubmittedByUser;
+    }
 }

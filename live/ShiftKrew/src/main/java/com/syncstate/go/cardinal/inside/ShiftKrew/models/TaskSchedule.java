@@ -39,6 +39,9 @@ public class TaskSchedule implements Serializable {
     @Column(name = "isActive", nullable = false)
     private Boolean isActive;
 
+    @Column(name = "templateCasualJobId", nullable = true)
+    private Long templateCasualJobId;
+
     @JsonSerialize(using = JsonDateTimeSerializer.class)
     @JsonDeserialize(using = TimestampDeserializer.class)
     @Column(nullable= false)

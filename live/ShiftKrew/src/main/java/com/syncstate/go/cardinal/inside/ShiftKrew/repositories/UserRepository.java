@@ -35,4 +35,8 @@ public interface UserRepository extends JpaRepository<User, Long>{
     @Query("SELECT u from User u WHERE u.deletedAt IS NULL " +
             "AND u.username = :username")
     Optional<User> getAnyserByUsername(String username);
+
+
+    @Query("SELECT u FROM User u WHERE u.activationCode = :activationCode")
+    User getUserByActivationCode(String activationCode);
 }

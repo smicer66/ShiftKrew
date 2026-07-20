@@ -40,6 +40,15 @@ public class EmployerController {
         AutoGraphResponse autoGraphResponse = employerService.postACasualJob(user, postAJobRequest);
         return ResponseEntity.ok().body(autoGraphResponse);
     }
+    @RequestMapping(value="/update-a-casual-job", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> postACasualJob(@RequestBody UpdateAJobRequest updateAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.updateACasualJob(user, updateAJobRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
 
     @RequestMapping(value="/preview-invoice", method = RequestMethod.POST)
     public ResponseEntity<AutoGraphResponse> previewInvoice(@RequestBody PostAJobRequest postAJobRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
@@ -59,6 +68,17 @@ public class EmployerController {
         User user = tokenService.getUserFromToken(request);
 
         AutoGraphResponse autoGraphResponse = employerService.cancelACasualJob(user, cancelAJobRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+
+    @RequestMapping(value="/get-a-casual-job/{casualJobId}", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> getACasualJob(@PathVariable Long casualJobId) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = employerService.getACasualJob(user, casualJobId);
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 }

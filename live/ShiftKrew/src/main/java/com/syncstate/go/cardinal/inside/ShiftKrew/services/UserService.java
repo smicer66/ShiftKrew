@@ -17,6 +17,7 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResp
 import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -228,6 +229,30 @@ public class UserService {
         autoGraphResponse.setResponseData(userDataDTO);
 
         return autoGraphResponse;
+    }
+
+    public ResponseEntity activationUserProfile(String activationCode) throws AppException {
+        User user = this.userRepository.getUserByActivationCode(activationCode);
+        if(user==null)
+        {
+            throw new AppException("Invalid action. Use the activation link to activate your profile.");
+        }
+
+        if(user!=null && user.getActivationCode()==null)
+        {
+            throw new AppException("Invalid action. This activation link is invalid.");
+        }
+
+        user.setActivationCode(null);
+        user.setUserStatus(UserStatus.ACTIVATED);
+        this.userRepository.save(user);
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Your profile has been activated. You can now log in.");
+        autoGraphResponse.setResponseData(null);
+
+        return ResponseEntity.ok(autoGraphResponse);
     }
 
 //    public AutoGraphResponse loginCustomer(LoginRequest loginRequest) {

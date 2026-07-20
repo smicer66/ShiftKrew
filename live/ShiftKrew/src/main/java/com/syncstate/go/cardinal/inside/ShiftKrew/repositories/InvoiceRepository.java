@@ -24,4 +24,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>{
 
     @Query("SELECT u FROM Invoice u WHERE u.casualJobId = :casualJobId AND u.invoiceStatus = :invoiceStatus")
     Invoice getInvoiceByCasualJobIdAndStatus(Long casualJobId, InvoiceStatus invoiceStatus);
+
+    @Query("SELECT u FROM Invoice u FROM u.casualJobId = :casualJobId")
+    Collection<Invoice> getInvoiceByCasualJobId(Long casualJobId);
 }

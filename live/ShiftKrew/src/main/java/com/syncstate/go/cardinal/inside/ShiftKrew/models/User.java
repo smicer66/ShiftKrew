@@ -42,6 +42,9 @@ public class User implements Serializable, UserDetails {
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name="activationCode", nullable = true)
+    private String activationCode;
+
     @Column(name = "userStatus", nullable = false)
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus;

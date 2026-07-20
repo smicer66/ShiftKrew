@@ -39,4 +39,30 @@ public class AuthController {
         return autoGraphResponse;
     }
 
+
+
+    @RequestMapping(value="/forgot-password", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> forgotPassword(@RequestBody ForgotPasswordRequest forgotPasswordRequest) throws Exception {
+        ResponseEntity autoGraphResponse = authService.forgotPassword(forgotPasswordRequest);
+        return autoGraphResponse;
+    }
+
+
+    @RequestMapping(value="/update-password", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> updatePassword(@RequestBody UpdatePasswordRequest updatePasswordRequest) throws JsonProcessingException, AppException {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        ResponseEntity autoGraphResponse = authService.updatePassword(updatePasswordRequest, user);
+        return autoGraphResponse;
+    }
+
+
+    @RequestMapping(value="/activate-profile/{activationCode}", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> activateProfile(@PathVariable String activationCode) throws AppException {
+
+        ResponseEntity autoGraphResponse = userService.activationUserProfile(activationCode);
+        return autoGraphResponse;
+    }
+
 }

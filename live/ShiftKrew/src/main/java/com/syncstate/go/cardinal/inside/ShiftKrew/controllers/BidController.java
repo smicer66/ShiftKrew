@@ -51,6 +51,18 @@ public class BidController {
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
+    @RequestMapping(value="/view-bids-by-job-id/{jobId}", method = RequestMethod.GET)
+    public ResponseEntity<AutoGraphResponse> viewBidByJobId(@PathVariable Long jobId) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+
+
+        AutoGraphResponse autoGraphResponse = bidService.viewBidByJobId(user, jobId);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
     @RequestMapping(value="/select-winning-bid", method = RequestMethod.POST)
     public ResponseEntity<AutoGraphResponse> selectWinningBid(@RequestBody SelectWinningBidRequest selectWinningBidRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
     {

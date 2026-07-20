@@ -48,6 +48,8 @@ public class EmployerService {
     private InvoiceRepository invoiceRepository;
     @Autowired
     private InvoiceItemRepository invoiceItemRepository;
+    @Autowired
+    private BidRepository bidRepository;
 
 
     @Value("${holiday.pay.percentage}")
@@ -538,6 +540,250 @@ public class EmployerService {
         AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
         autoGraphResponse.setStatus(0);
         autoGraphResponse.setStatusMessage("Your business has been mapped to your ShiftKrew account successfully.");
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse updateACasualJob(User user, UpdateAJobRequest updateAJobRequest) throws AppException {
+
+        //Double totalWages = 0.00;
+        Double totalInsurancePension = 0.00;
+        Double totalHolidayPay = 0.00;
+        Double totalOtherAmount = 0.00;
+
+        if(!user.getUserRole().equals(Role.EMPLOYER))
+            throw new AppException("Only employers can create a casual job.");
+
+        CasualJob casualJob = this.casualJobRepository.getById(updateAJobRequest.getCasualJobId());
+
+        UserEmployer userEmployer = this.userEmployerRepository.getById(casualJob.getSubmittedByUserEmployerId());
+        if(!(userEmployer!=null && userEmployer.getUserId().equals(user.getUserId())))
+            throw new AppException("Only the employer who posted this casual job can update this job.");
+
+
+        TaskSchedule taskSchedule_ = this.taskScheduleRepository.getTaskScheduleByTemplateCasualJobId(casualJob.getCasualJobId());
+        if(taskSchedule_!=null)
+        {
+            this.taskScheduleRepository.delete(taskSchedule_);
+        }
+
+        Collection<CasualJobSchedule> casualJobScheduleListExist = this.casualJobScheduleRepository.getCasualJobScheduleByCasualJobId(casualJob.getCasualJobId());
+        if(casualJobScheduleListExist!=null)
+        {
+            casualJobScheduleListExist.stream().map(cjs -> {
+                this.casualJobScheduleRepository.delete(cjs);
+                return cjs;
+            }).collect(Collectors.toList());
+        }
+
+        Collection<InvoiceItem> invoiceItemList = this.invoiceItemRepository.getByCasualJobId(casualJob.getCasualJobId());
+        invoiceItemList.stream().map(iil -> {
+            this.invoiceItemRepository.delete(iil);
+            return iil;
+        }).collect(Collectors.toList());
+
+        Collection<Invoice> invoiceList = this.invoiceRepository.getInvoiceByCasualJobId(casualJob.getCasualJobId());
+        invoiceList.stream().map(il -> {
+            this.invoiceRepository.delete(il);
+            return il;
+        }).collect(Collectors.toList());
+
+
+        casualJob.setJobDetails(updateAJobRequest.getJobDetails());
+        casualJob.setJobTitle(updateAJobRequest.getJobTitle());
+        casualJob.setJobLineAddress(updateAJobRequest.getJobLineAddress());
+        casualJob.setJobAddressPostCode(updateAJobRequest.getJobAddressPostCode());
+        casualJob.setDressCode(updateAJobRequest.getDressCode());
+        casualJob.setAutoSelectFromFavorite(updateAJobRequest.getAutoSelectFromFavorite());
+        casualJob.setSkillId(updateAJobRequest.getSkillId());
+        casualJob.setCasualJobStatus(CasualJobStatus.OPEN);
+        casualJob.setSubmittedByUserEmployerId(userEmployer.getUserEmployerId());
+        casualJob.setSubmittedByUserId(userEmployer.getUserId());
+        casualJob.setDressCode(updateAJobRequest.getDressCode());
+        casualJob.setContactPerson(updateAJobRequest.getContactPerson());
+        casualJob.setAutoSelectFromFavorite(updateAJobRequest.getAutoSelectFromFavorite()==null ? false : updateAJobRequest.getAutoSelectFromFavorite());
+        CasualJob casualJobCreated = (CasualJob) casualJobRepository.save(casualJob);
+
+        if(updateAJobRequest.getAutoPostThisForTheNextNthWeeks()!=null)
+        {
+            TaskSchedule taskSchedule = new TaskSchedule();
+            taskSchedule.setTaskScheduleIntervalType(TaskScheduleIntervalType.WEEK);
+            taskSchedule.setIntervalPeriod(1);
+            taskSchedule.setTaskScheduleType(TaskScheduleType.POST_CASUAL_JOB);
+            taskSchedule.setIsActive(true);
+            taskSchedule.setTemplateCasualJobId(casualJobCreated.getCasualJobId());
+            taskSchedule.setPeriodTaskRuns(updateAJobRequest.getAutoPostThisForTheNextNthWeeks());
+            taskSchedule = (TaskSchedule) taskScheduleRepository.save(taskSchedule);
+        }
+
+        List<CasualJobSchedule> casualJobScheduleList = updateAJobRequest.getJobSchedule().stream().map(js -> {
+            CasualJobSchedule casualJobSchedule = new CasualJobSchedule();
+            casualJobSchedule.setJobId(casualJobCreated.getCasualJobId());
+            casualJobSchedule.setBonusPerHour(js.getBonusPerHour());
+            casualJobSchedule.setPayPerHour(js.getPayPerHour());
+            casualJobSchedule.setScheduleEndDate(js.getScheduleEndDate());
+            casualJobSchedule.setScheduleStartDate(js.getScheduleStartDate());
+            casualJobSchedule.setEmployeesNeeded(js.getEmployeesNeeded());
+            casualJobScheduleRepository.save(casualJobSchedule);
+            return casualJobSchedule;
+        }).collect(Collectors.toList());
+
+        double totalWagesPerHour = updateAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
+            Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+            long minutes = d.toMinutes();
+            return minutes * js.getEmployeesNeeded() * js.getPayPerHour()/60;
+        }).sum();
+        long totalMinutes = updateAJobRequest.getJobSchedule().stream().mapToLong(js -> {
+            Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+            long minutes = d.toMinutes();
+            return minutes;
+        }).sum();
+        totalHolidayPay = holidayPayPercent * totalWagesPerHour/100;
+        totalInsurancePension = (totalHolidayPay + totalWagesPerHour) * totalInsurancePensionPercent;
+
+        if(casualJobScheduleList!=null && casualJobScheduleList.size()>0)
+        {
+
+            List<Invoice> employerInvoices = this.invoiceRepository.getInvoicesByEmployerId(updateAJobRequest.getUserEmployerId());
+            int invoiceNumber = employerInvoices.size() + 1;
+            String invoiceNumberPadded = StringUtils.left(Integer.toString(invoiceNumber), 4);
+
+            Invoice invoice = new Invoice();
+            invoice.setCasualJobDate(casualJobScheduleList.get(0).getScheduleStartDate().toLocalDate());
+            invoice.setInvoiceDescription("Employee recruitment - "+ updateAJobRequest.getSkillName());
+            invoice.setInvoiceNumber("INV-" +
+                    Integer.toString(casualJobScheduleList.get(0).getScheduleStartDate().toLocalDate().getYear())
+                    + "-" + invoiceNumberPadded
+            );
+            invoice.setBillToAddressCity(userEmployer.getEmployerContactAddressCity());
+            invoice.setBillToAddressState(userEmployer.getEmployerContactAddressState());
+            invoice.setBillToAddressCountry(userEmployer.getEmployerContactAddressCountry());
+            invoice.setBillToPostCodeAddress(userEmployer.getEmployerContactAddressPostCode());
+            invoice.setBillToLineAddress(userEmployer.getEmployerContactAddress());
+            invoice.setBillToFullName(user.getFirstName() + " " + user.getLastName());
+            invoice.setCasualJobId(casualJobCreated.getCasualJobId());
+            invoice.setUserEmployerId(userEmployer.getUserEmployerId());
+            invoice.setTotalWages(totalWagesPerHour);
+            invoice.setTotalInsurancePension(totalInsurancePension);
+            invoice.setTotalHolidayPay(totalHolidayPay);
+            invoice.setTotalOtherAmount(totalOtherAmount);
+            invoice.setPayToBankAccountId(payToBankAccountId);
+            invoice.setIsCredit(false);
+            invoice.setInvoiceStatus(InvoiceStatus.ISSUED);
+            Invoice invoiceCreated = (Invoice)invoiceRepository.save(invoice);
+
+            Double totalEmployeePay = updateAJobRequest.getJobSchedule().stream().mapToDouble(js -> {
+                Duration d = Duration.between(js.getScheduleStartDate(), js.getScheduleEndDate());
+                double workPeriodInHrs = Math.round(d.toMinutes() / 60);
+
+                InvoiceItem invoiceItem = new InvoiceItem();
+                invoiceItem.setInvoiceId(invoiceCreated.getInvoiceId());
+                invoiceItem.setItemDescription("Wages - " + f.format(workPeriodInHrs) + " hours");
+                invoiceItem.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + updateAJobRequest.getSkillName());
+                invoiceItem.setQty(js.getEmployeesNeeded());
+                invoiceItem.setRate(js.getPayPerHour());
+                invoiceItem.setTotalAmount(js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded());
+                this.invoiceItemRepository.save(invoiceItem);
+
+                InvoiceItem invoiceItem1 = new InvoiceItem();
+                invoiceItem1.setInvoiceId(invoiceCreated.getInvoiceId());
+                invoiceItem1.setItemDescription("Holiday Pay");
+                invoiceItem1.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + f.format(holidayPayPercent) + "% of wages");
+                invoiceItem1.setQty(js.getEmployeesNeeded());
+                invoiceItem1.setRate(js.getPayPerHour());
+                invoiceItem1.setTotalAmount(js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100);
+                this.invoiceItemRepository.save(invoiceItem1);
+
+
+                InvoiceItem invoiceItem2 = new InvoiceItem();
+                invoiceItem2.setInvoiceId(invoiceCreated.getInvoiceId());
+                invoiceItem2.setItemDescription("NI and Pension");
+                invoiceItem2.setItemDescription2(df.format(js.getScheduleStartDate())  +  ": " + f.format(totalInsurancePensionPercent) + "% of total earnings");
+                invoiceItem2.setQty(js.getEmployeesNeeded());
+                invoiceItem2.setRate(js.getPayPerHour());
+                invoiceItem2.setTotalAmount(((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
+                this.invoiceItemRepository.save(invoiceItem2);
+
+                return
+                        js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded()
+                                +
+                                js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100
+                                +
+                                (((js.getPayPerHour() * workPeriodInHrs) + (js.getPayPerHour() * workPeriodInHrs * js.getEmployeesNeeded() * holidayPayPercent / 100)) * totalInsurancePensionPercent / 100);
+            }).sum();
+
+
+            InvoiceItem invoiceItemServiceCharge = new InvoiceItem();
+            invoiceItemServiceCharge.setInvoiceId(invoiceCreated.getInvoiceId());
+            invoiceItemServiceCharge.setItemDescription("ShiftKrew charges");
+            invoiceItemServiceCharge.setItemDescription2(shiftKrewChargePercent + "% of total cost");
+            invoiceItemServiceCharge.setQty(1);
+            invoiceItemServiceCharge.setRate(shiftKrewChargePercent * totalEmployeePay / 100);
+            invoiceItemServiceCharge.setTotalAmount(shiftKrewChargePercent * totalEmployeePay / 100);
+            this.invoiceItemRepository.save(invoiceItemServiceCharge);
+
+
+            InvoiceItem invoiceItemVAT = new InvoiceItem();
+            invoiceItemVAT.setInvoiceId(invoiceCreated.getInvoiceId());
+            invoiceItemVAT.setItemDescription("VAT");
+            invoiceItemVAT.setItemDescription2(shiftKrewVAT + "%");
+            invoiceItemVAT.setQty(1);
+            invoiceItemVAT.setRate((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            invoiceItemVAT.setTotalAmount((invoiceItemServiceCharge.getTotalAmount() + totalEmployeePay) * shiftKrewVAT / 100);
+            this.invoiceItemRepository.save(invoiceItemVAT);
+
+
+            CasualJobDTO casualJobDTO = new CasualJobDTO();
+            BeanUtils.copyProperties(casualJob, casualJobDTO);
+            casualJobDTO.setEmployerJoinDate(df.format(userEmployer.getCreatedAt().toLocalDate()));
+            casualJobDTO.setPostByEmployer(userEmployer.getEmployerName());
+            casualJobDTO.setContactPerson(updateAJobRequest.getContactPerson());
+            casualJobDTO.setSkillRequired(updateAJobRequest.getSkillName());
+
+
+            List<CasualJobScheduleDTO> casualJobScheduleDTOList =  casualJobScheduleList.stream().map(cjs -> {
+                CasualJobScheduleDTO casualJobScheduleDTO = new CasualJobScheduleDTO();
+                casualJobScheduleDTO.setBonusPerHour(cjs.getBonusPerHour());
+                casualJobScheduleDTO.setScheduleEndDate(cjs.getScheduleEndDate());
+                casualJobScheduleDTO.setScheduleStartDate(cjs.getScheduleStartDate());
+                casualJobScheduleDTO.setPayPerHour(cjs.getPayPerHour());
+                casualJobScheduleDTO.setBonusPerHour(cjs.getBonusPerHour());
+                casualJobScheduleDTO.setEmployeesNeeded(cjs.getEmployeesNeeded());
+                return casualJobScheduleDTO;
+            }).collect(Collectors.toList());
+
+            casualJobDTO.setCasualJobSchedule(casualJobScheduleDTOList);
+
+
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your job has been posted.");
+            autoGraphResponse.setResponseData(casualJobDTO);
+
+            return autoGraphResponse;
+        }
+
+
+        throw new AppException("We could not post your job. Please try again.");
+
+
+    }
+
+    public AutoGraphResponse getACasualJob(User user, Long casualJobId) {
+        CasualJob casualJob = this.casualJobRepository.getById(casualJobId);
+        Collection<Bid> bids = this.bidRepository.getBidByCasualJobId(casualJobId);
+        Collection<CasualJobSchedule> casualJobScheduleCollection = this.casualJobScheduleRepository.
+                getCasualJobScheduleByCasualJobId(casualJob.getCasualJobId());
+
+        HashMap<String, Object> hMap = new HashMap<>();
+        hMap.put("casualJob", casualJob);
+        hMap.put("bids", bids);
+        hMap.put("casualJobSchedule", casualJobScheduleCollection);
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Casual Job details.");
+        autoGraphResponse.setResponseData(hMap);
+
         return autoGraphResponse;
     }
 }
