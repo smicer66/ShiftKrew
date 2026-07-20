@@ -10,6 +10,7 @@ import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.BidDTO;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.CancelAShiftRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.PostABidRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.SelectWinningBidRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.UpdateABidRequest;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
 import org.springframework.beans.BeanUtils;
@@ -230,5 +231,92 @@ public class BidService {
         autoGraphResponse.setResponseData(bidList);
 
         return autoGraphResponse;
+    }
+
+    public AutoGraphResponse updateABid(User user, UpdateABidRequest updateABidRequest) throws AppException {
+        final Bid bid = this.bidRepository.getById(updateABidRequest.getBidId());
+        Collection<Bid> bidList = this.bidRepository.getBidByCasualJobId(updateABidRequest.getCasualJobId());
+        if(bidList!=null)
+        {
+            bidList.stream().reduce(bl -> bl.getBidId().equals(bid.getBidId()))
+        }
+        CasualJob casualJob = this.casualJobRepository.getById(updateABidRequest.getCasualJobId());
+        UserEmployer userEmployer = this.userEmployerRepository
+                .getUserEmployerByUserEmployerId(casualJob.getSubmittedByUserEmployerId());
+        List<CasualJobScheduleBid> casualJobScheduleBidList = this.casualJobScheduleBidRepository.
+                getCasualJobScheduleBidByBidId(updateABidRequest.getBidId());
+        if(casualJobScheduleBidList!=null)
+        {
+            casualJobScheduleBidList.stream().map(cjs -> {
+                this.casualJobScheduleBidRepository.delete(cjs);
+                return cjs;
+            }).collect(Collectors.toList());
+        }
+
+        if(casualJob!=null && casualJob.getCasualJobStatus().equals(CasualJobStatus.OPEN))
+        {
+
+            Collection<CasualJobSchedule> casualJobSchedules =
+                    this.casualJobScheduleRepository.getCasualJobScheduleByCasualJobScheduleId(
+                            updateABidRequest.getBidScheduleIdList()
+                    );
+            List<Long> casualJobScheduleIds = casualJobSchedules.stream().
+                    map(cjs -> cjs.getCasualJobScheduleId()).
+                    collect(Collectors.toList());
+
+            if(bid==null)
+            {
+                bid = new Bid();
+            }
+            else
+            {
+                Collection<CasualJobScheduleBid> casualJobScheduleBids = this.casualJobScheduleBidRepository
+                        .getCasualJobScheduleBidByScheduleIdAndBidId(
+                                bid.getBidId(),
+                                casualJobScheduleIds
+
+                        );
+                casualJobScheduleBids.stream().map(cjs -> {
+                    this.casualJobScheduleBidRepository.delete(cjs);
+                    return null;
+                }).collect(Collectors.toList());
+            }
+            bid.setBidAmountPerHour(updateABidRequest.getBidAmountPerHour());
+            bid.setBidDetails(updateABidRequest.getBidDetails());
+            bid.setBidStatus(BidStatus.ACTIVE);
+            bid.setCasualJobId(casualJob.getCasualJobId());
+            bid.setBidSubmittedByUserId(user.getUserId());
+            Bid bidCreated = (Bid) this.bidRepository.save(bid);
+
+
+
+
+
+
+            System.out.println(casualJobSchedules.size());
+            casualJobSchedules.stream().map(bs -> {
+                CasualJobScheduleBid casualJobScheduleBid = new CasualJobScheduleBid();
+                casualJobScheduleBid.setBidOwnerId(bidCreated.getBidSubmittedByUserId());
+                casualJobScheduleBid.setJobId(bidCreated.getCasualJobId());
+                casualJobScheduleBid.setJobScheduleId(bs.getCasualJobScheduleId());
+                casualJobScheduleBid.setBidId(bidCreated.getBidId());
+                casualJobScheduleBid = (CasualJobScheduleBid)this.casualJobScheduleBidRepository.save(casualJobScheduleBid);
+
+                return casualJobScheduleBid;
+            }).collect(Collectors.toList());
+
+
+            BidDTO bidDTO = new BidDTO();
+            BeanUtils.copyProperties(bid, bidDTO);
+
+            AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+            autoGraphResponse.setStatus(0);
+            autoGraphResponse.setStatusMessage("Your bid has been submitted.");
+            autoGraphResponse.setResponseData(bidDTO);
+
+            return autoGraphResponse;
+        }
+
+        throw new AppException("This casual job is not receiving anymore bids.");
     }
 }

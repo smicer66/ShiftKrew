@@ -14,7 +14,11 @@ import java.util.List;
 @Repository
 public interface CasualJobScheduleBidRepository extends JpaRepository<CasualJobScheduleBid, Long>{
 
-    @Query("SELECT u FROM CasualJobScheduleBid u WHERE u.bidId = :bidId " +
+    @Query("SELECT u FROM CasualJobScheduleBid u WHERE u.bidId = :bidId" +
             "AND u.jobScheduleId IN :newList")
     List<CasualJobScheduleBid> getCasualJobScheduleBidByScheduleIdAndBidId(Long bidId, List newList);
+
+
+    @Query("SELECT u FROM CasualJobScheduleBid u WHERE u.bidId = :bidId")
+    List<CasualJobScheduleBid> getCasualJobScheduleBidByBidId(Long bidId);
 }
