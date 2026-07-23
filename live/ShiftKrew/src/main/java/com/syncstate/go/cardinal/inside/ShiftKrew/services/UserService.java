@@ -3,16 +3,14 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.services;
 
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.Role;
 import com.syncstate.go.cardinal.inside.ShiftKrew.enums.UserStatus;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.WorkPermitStatus;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.InstanceExistsException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.*;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserDTO;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserDataDTO;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.dto.UserEmployerDTO;
-import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserTechnicalTrainingRequest;
-import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.CreateNewUserAccountRequest;
-import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserSkillRequest;
-import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.AddUserWorkExperienceRequest;
+import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.*;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.responses.AutoGraphResponse;
 import com.syncstate.go.cardinal.inside.ShiftKrew.repositories.*;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -51,6 +49,9 @@ public class UserService {
 
     @Autowired
     UserEmployerRepository userEmployerRepository;
+
+    @Autowired
+    WorkPermitRepository workPermitRepository;
 
 
 
@@ -274,6 +275,55 @@ public class UserService {
         AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
         autoGraphResponse.setStatus(0);
         autoGraphResponse.setStatusMessage("Referral codes have been generated for you.");
+        autoGraphResponse.setResponseData(null);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse addWorkPermit(User user, AddWorkPermitRequest addWorkPermitRequest) {
+
+
+        UserWorkPermit userWorkPermit = this.workPermitRepository.
+                getWorkPermitByUserIdAndStatus(user.getUserId(), WorkPermitStatus.SUBMITTED);
+        if(userWorkPermit==null)
+        {
+            userWorkPermit = new UserWorkPermit();
+        }
+
+        userWorkPermit.setWorkPermitStatus(WorkPermitStatus.SUBMITTED);
+        userWorkPermit.setWorkPermitNumber(addWorkPermitRequest.getWorkPermitNumber());
+        userWorkPermit.setUserId(user.getUserId());
+        this.workPermitRepository.save(userWorkPermit);
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Thank you for submitting your work permit. " +
+                "We shall verify your work permit and give you feedback. This can take between 1 and 3 working days.");
+        autoGraphResponse.setResponseData(null);
+
+        return autoGraphResponse;
+    }
+
+    public AutoGraphResponse verifyPermit(User user, VerifyUserWorkPermitRequest verifyUserWorkPermitRequest) throws AppException {
+        UserWorkPermit userWorkPermit = this.workPermitRepository.
+                getWorkPermitByStatus(WorkPermitStatus.SUBMITTED);
+        if(userWorkPermit==null)
+        {
+            throw new AppException("Invalid work permit selected. Only work permits that have been submitted can be verified.");
+        }
+
+        userWorkPermit.setWorkPermitStatus(WorkPermitStatus.valueOf(verifyUserWorkPermitRequest.getWorkPermitStatus()));
+        userWorkPermit.setVisaEndDAte(verifyUserWorkPermitRequest.getVisaEndDAte());
+        userWorkPermit.setVisaStartDAte(verifyUserWorkPermitRequest.getVisaStartDAte());
+        userWorkPermit.setVisaHolderName(verifyUserWorkPermitRequest.getVisaHolderName());
+        userWorkPermit.setVerifiedByUserId(user.getUserId());
+        this.workPermitRepository.save(userWorkPermit);
+
+        //Send Email Notification to Work Permit Holder
+
+        AutoGraphResponse autoGraphResponse = new AutoGraphResponse();
+        autoGraphResponse.setStatus(0);
+        autoGraphResponse.setStatusMessage("Thank you for verifying this work permit.");
         autoGraphResponse.setResponseData(null);
 
         return autoGraphResponse;

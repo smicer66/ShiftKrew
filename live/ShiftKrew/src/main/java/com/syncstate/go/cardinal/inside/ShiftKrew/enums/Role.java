@@ -3,6 +3,7 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.enums;
 public enum Role {
     SYSTEM("SYSTEM"),
     EMPLOYEE("Employee"),
+    ADMIN("Administrator"),
     EMPLOYER("Employer");
 
 

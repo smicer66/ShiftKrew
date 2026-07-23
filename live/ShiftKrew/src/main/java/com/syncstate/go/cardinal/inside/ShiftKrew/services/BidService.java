@@ -234,13 +234,20 @@ public class BidService {
     }
 
     public AutoGraphResponse updateABid(User user, UpdateABidRequest updateABidRequest) throws AppException {
-        final Bid bid = this.bidRepository.getById(updateABidRequest.getBidId());
+        Bid bid = this.bidRepository.getById(updateABidRequest.getBidId());
+        final Long bidId = bid.getBidId();
         Collection<Bid> bidList = this.bidRepository.getBidByCasualJobId(updateABidRequest.getCasualJobId());
+        CasualJob casualJob = this.casualJobRepository.getById(updateABidRequest.getCasualJobId());
         if(bidList!=null)
         {
-            bidList.stream().reduce(bl -> bl.getBidId().equals(bid.getBidId()))
+            Collection<Bid> bidsFiltered = bidList.stream()
+                    .filter(bl -> bl.getBidSubmittedByUserId().equals(user.getUserId()) && bidId.equals(bl.getBidId()))
+                    .collect(Collectors.toList());
+            if(bidsFiltered.size()==0)
+            {
+                throw new AppException("You do not have the permission to update this bid.");
+            }
         }
-        CasualJob casualJob = this.casualJobRepository.getById(updateABidRequest.getCasualJobId());
         UserEmployer userEmployer = this.userEmployerRepository
                 .getUserEmployerByUserEmployerId(casualJob.getSubmittedByUserEmployerId());
         List<CasualJobScheduleBid> casualJobScheduleBidList = this.casualJobScheduleBidRepository.

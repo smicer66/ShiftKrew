@@ -2,6 +2,7 @@ package com.syncstate.go.cardinal.inside.ShiftKrew.controllers;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.syncstate.go.cardinal.inside.ShiftKrew.enums.Role;
 import com.syncstate.go.cardinal.inside.ShiftKrew.exceptions.AppException;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.User;
 import com.syncstate.go.cardinal.inside.ShiftKrew.models.requests.*;
@@ -82,6 +83,31 @@ public class UserController {
         User user = tokenService.getUserFromToken(request);
 
         AutoGraphResponse autoGraphResponse = userService.addUserTechnicalTraining(user, addUserTechnicalTrainingRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+    @RequestMapping(value="/add-work-permit", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> addWorkPermit(@RequestBody AddWorkPermitRequest addWorkPermitRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        AutoGraphResponse autoGraphResponse = userService.addWorkPermit(user, addWorkPermitRequest);
+        return ResponseEntity.ok().body(autoGraphResponse);
+    }
+
+    @RequestMapping(value="/verify-work-permit", method = RequestMethod.POST)
+    public ResponseEntity<AutoGraphResponse> verifyWorkPermit(@RequestBody VerifyUserWorkPermitRequest verifyUserWorkPermitRequest) throws JsonProcessingException, AppException   //@RequestHeader(name = "Authorization") String token,
+    {
+        String jwtToken = this.request.getHeader("Authorization").substring("Bearer ".length());
+        User user = tokenService.getUserFromToken(request);
+
+        if(!user.getUserRole().equals(Role.ADMIN))
+        {
+            throw new AppException("You do not have the privileges to access this resource.");
+        }
+
+        AutoGraphResponse autoGraphResponse = userService.verifyPermit(user, verifyUserWorkPermitRequest);
         return ResponseEntity.ok().body(autoGraphResponse);
     }
 
